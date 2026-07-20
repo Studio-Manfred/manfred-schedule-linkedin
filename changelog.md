@@ -14,7 +14,8 @@
   Stockholm) of every dated post. Click a chip to edit it (or open a published post on
   LinkedIn); click ＋ on a future day to compose pinned there; **drag** a queued/failed/
   missed post to another day to reschedule it (keeps its time of day, DST-correct). Client-
-  side over already-loaded posts — no new API. (STU-670)
+  side over already-loaded posts — no new API. (STU-670) Dragging shows a grab cursor and a
+  floating preview of the post, dims the source, and highlights the target day. (STU-671)
 
 ## 0.1.0 — 2026-07-20 (pending first production deploy)
 
