@@ -13,6 +13,7 @@ function isoWeekday(d: TZDate): number {
 export function slotOccurrences(slots: Slot[], after: Date, count: number): Date[] {
   if (slots.length === 0 || count === 0) return []
   const out: Date[] = []
+  const seen = new Set<number>()
   const start = new TZDate(after, TIMEZONE)
   // Worst case one slot/week: scan enough days to find `count` occurrences.
   const maxDays = count * 7 + 7
@@ -24,7 +25,11 @@ export function slotOccurrences(slots: Slot[], after: Date, count: number): Date
     for (const s of todays) {
       const [hh = 0, mm = 0] = s.timeLocal.split(':').map(Number)
       const occ = new TZDate(day.getFullYear(), day.getMonth(), day.getDate(), hh, mm, TIMEZONE)
-      if (occ.getTime() > after.getTime()) out.push(new Date(occ.getTime()))
+      const t = occ.getTime()
+      if (t > after.getTime() && !seen.has(t)) {
+        seen.add(t)
+        out.push(new Date(t))
+      }
     }
   }
   return out.sort((a, b) => a.getTime() - b.getTime()).slice(0, count)

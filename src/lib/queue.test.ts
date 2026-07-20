@@ -37,6 +37,17 @@ describe('slotOccurrences', () => {
   it('returns empty when no slots are configured', () => {
     expect(slotOccurrences([], MON_NOON, 5)).toEqual([])
   })
+
+  it('collapses DST spring-forward gap duplicates to a single occurrence', () => {
+    const slots = [slot(1, 6, '02:30'), slot(2, 6, '03:30')] // Sunday slots; DST starts Sun 2026-03-29
+    const after = new Date('2026-03-27T12:00:00Z')
+    const occs = slotOccurrences(slots, after, 3)
+    expect(occs.map((d) => d.toISOString())).toEqual([
+      '2026-03-29T01:30:00.000Z', // both 02:30 and 03:30 resolve here in the gap — deduped
+      '2026-04-05T00:30:00.000Z', // next Sunday 02:30 CEST
+      '2026-04-05T01:30:00.000Z', // next Sunday 03:30 CEST
+    ])
+  })
 })
 
 describe('dealSchedule', () => {
@@ -57,5 +68,12 @@ describe('dealSchedule', () => {
   it('returns an empty map when no slots are configured', () => {
     const result = dealSchedule({ slots: [], queuedIds: ['a'], pinnedTimes: [], now: MON_NOON })
     expect(result.size).toBe(0)
+  })
+
+  it('never assigns two posts the same instant when slot rows are duplicated', () => {
+    const dup = [slot(1, 1, '08:30'), slot(2, 1, '08:30')]
+    const result = dealSchedule({ slots: dup, queuedIds: ['a', 'b'], pinnedTimes: [], now: MON_NOON })
+    expect(result.get('a')?.toISOString()).toBe('2026-07-21T06:30:00.000Z')
+    expect(result.get('b')?.toISOString()).toBe('2026-07-28T06:30:00.000Z')
   })
 })
