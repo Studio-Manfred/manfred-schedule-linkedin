@@ -44,10 +44,10 @@ export const api = {
   async listPosts(): Promise<Post[]> {
     return (await request<{ posts: Post[] }>('/api/posts')).posts
   },
-  async createPost(input: { body: string; images: PostImage[]; action: 'draft' | 'queue' | 'pin'; scheduledAt?: string }): Promise<Post> {
+  async createPost(input: { body: string; images: PostImage[]; firstComment?: string; action: 'draft' | 'queue' | 'pin'; scheduledAt?: string }): Promise<Post> {
     return (await request<{ post: Post }>('/api/posts', { method: 'POST', body: JSON.stringify(input) })).post
   },
-  async updatePost(id: string, patch: { body?: string; images?: PostImage[]; action?: 'draft' | 'queue' | 'pin'; scheduledAt?: string }): Promise<Post> {
+  async updatePost(id: string, patch: { body?: string; images?: PostImage[]; firstComment?: string; action?: 'draft' | 'queue' | 'pin'; scheduledAt?: string }): Promise<Post> {
     return (await request<{ post: Post }>(`/api/posts/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })).post
   },
   async deletePost(id: string): Promise<void> {

@@ -3,7 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Card } from '@studio-manfred/manfred-design-system'
 import { api, ApiError } from '@/api/client'
 import { dealSchedule } from '@/lib/queue'
-import { MAX_BODY_LENGTH, TIMEZONE, type Post, type PostImage, type Slot } from '@/lib/types'
+import {
+  MAX_BODY_LENGTH,
+  MAX_FIRST_COMMENT_LENGTH,
+  TIMEZONE,
+  type Post,
+  type PostImage,
+  type Slot,
+} from '@/lib/types'
 import { ImageAttach } from '@/components/ImageAttach'
 
 const fmt = new Intl.DateTimeFormat('sv-SE', {
@@ -21,6 +28,7 @@ export function ComposerScreen() {
   const navigate = useNavigate()
 
   const [body, setBody] = useState('')
+  const [firstComment, setFirstComment] = useState('')
   const [images, setImages] = useState<PostImage[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [posts, setPosts] = useState<Post[]>([])
@@ -36,6 +44,7 @@ export function ComposerScreen() {
         const post = p.find((x) => x.id === editId)
         if (post) {
           setBody(post.body)
+          setFirstComment(post.firstComment ?? '')
           setImages(post.images)
           if (post.pinned && post.scheduledAt) {
             const parts = new Intl.DateTimeFormat('sv-SE', {
@@ -67,9 +76,10 @@ export function ComposerScreen() {
   }, [slots, posts, editId])
 
   const remaining = MAX_BODY_LENGTH - body.length
+  const firstCommentRemaining = MAX_FIRST_COMMENT_LENGTH - firstComment.length
   const altMissing = images.some((i) => i.alt.trim().length === 0)
   const emptyBody = body.trim().length === 0
-  const invalid = emptyBody || remaining < 0 || altMissing
+  const invalid = emptyBody || remaining < 0 || firstCommentRemaining < 0 || altMissing
 
   async function submit(action: 'draft' | 'queue' | 'pin') {
     setBusy(true)
@@ -78,6 +88,7 @@ export function ComposerScreen() {
       const input = {
         body,
         images,
+        firstComment,
         action,
         ...(action === 'pin' ? { scheduledAt: new Date(pinAt).toISOString() } : {}),
       }
@@ -125,6 +136,39 @@ export function ComposerScreen() {
       </div>
 
       <ImageAttach images={images} onChange={setImages} />
+
+      <div className="flex flex-col gap-2">
+        <label className="flex flex-col gap-1">
+          <span className="font-medium">First comment (optional)</span>
+          <textarea
+            value={firstComment}
+            onChange={(e) => setFirstComment(e.target.value)}
+            rows={3}
+            aria-describedby="first-comment-hint"
+            placeholder="Read more: https://example.com"
+            className="rounded-md border border-input bg-background px-3 py-2"
+          />
+        </label>
+        <div className="flex items-center justify-between gap-3">
+          <p id="first-comment-hint" className="text-sm text-muted-foreground">
+            Auto-posted as the first comment right after publishing. Put links here — LinkedIn
+            suppresses posts with links in the body.
+          </p>
+          {firstComment.length > 0 && (
+            <span
+              aria-live="polite"
+              className={
+                firstCommentRemaining < 0
+                  ? 'shrink-0 text-sm text-destructive'
+                  : 'shrink-0 text-sm text-muted-foreground'
+              }
+            >
+              {firstCommentRemaining.toLocaleString('sv-SE')} left
+            </span>
+          )}
+        </div>
+      </div>
+
       {error && (
         <p role="alert" className="text-destructive">
           {error}

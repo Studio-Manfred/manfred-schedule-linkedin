@@ -12,7 +12,7 @@ vi.mock('@/api/client', async (importOriginal) => {
 })
 
 const base: Post = {
-  id: 'x', body: '', images: [], status: 'published', pinned: false, position: null,
+  id: 'x', body: '', images: [], firstComment: null, status: 'published', pinned: false, position: null,
   scheduledAt: '2026-07-14T06:30:00.000Z', zernioPostId: 'z1', linkedinUrl: null,
   error: null, attempts: 1, createdAt: '', updatedAt: '',
 }

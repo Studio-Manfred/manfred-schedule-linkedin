@@ -1,15 +1,25 @@
-import { MAX_BODY_LENGTH, MAX_IMAGES, type PostImage } from '../../src/lib/types.js'
+import {
+  MAX_BODY_LENGTH,
+  MAX_FIRST_COMMENT_LENGTH,
+  MAX_IMAGES,
+  type PostImage,
+} from '../../src/lib/types.js'
 
 export interface ValidPostInput {
   body: string
   images: PostImage[]
+  firstComment: string | null
 }
 
 export function validatePostInput(
   input: unknown,
 ): { ok: true; value: ValidPostInput } | { ok: false; error: string } {
   if (typeof input !== 'object' || input === null) return { ok: false, error: 'invalid payload' }
-  const { body, images } = input as { body?: unknown; images?: unknown }
+  const { body, images, firstComment } = input as {
+    body?: unknown
+    images?: unknown
+    firstComment?: unknown
+  }
   if (typeof body !== 'string' || body.trim().length === 0) return { ok: false, error: 'post text is required' }
   if (body.length > MAX_BODY_LENGTH) return { ok: false, error: `post text exceeds ${MAX_BODY_LENGTH} characters` }
   if (!Array.isArray(images)) return { ok: false, error: 'images must be an array' }
@@ -20,7 +30,15 @@ export function validatePostInput(
     if (typeof url !== 'string' || url.length === 0) return { ok: false, error: 'image url is required' }
     if (typeof alt !== 'string') return { ok: false, error: 'image alt text is required' }
   }
-  return { ok: true, value: { body, images: images as PostImage[] } }
+  // Optional. Absent / blank collapses to null; a present value must be a string within the limit.
+  let comment: string | null = null
+  if (firstComment !== undefined && firstComment !== null) {
+    if (typeof firstComment !== 'string') return { ok: false, error: 'first comment must be text' }
+    if (firstComment.length > MAX_FIRST_COMMENT_LENGTH)
+      return { ok: false, error: `first comment exceeds ${MAX_FIRST_COMMENT_LENGTH} characters` }
+    if (firstComment.trim().length > 0) comment = firstComment
+  }
+  return { ok: true, value: { body, images: images as PostImage[], firstComment: comment } }
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/

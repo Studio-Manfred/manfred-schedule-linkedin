@@ -7,6 +7,7 @@ const base: Post = {
   id: '1',
   body: 'hello world',
   images: [],
+  firstComment: null,
   status: 'queued',
   pinned: false,
   position: 0,

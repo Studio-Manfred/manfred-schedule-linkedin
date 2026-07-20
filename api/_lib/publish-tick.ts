@@ -37,6 +37,7 @@ export async function runPublishTick(deps: TickDeps): Promise<TickResult> {
       requestId: post.id,
       body: post.body,
       images: post.images.map((i) => ({ url: i.url, alt: i.alt, contentType: guessContentType(i.url) })),
+      firstComment: post.firstComment,
     })
     if (outcome.ok) {
       await deps.markPublished(post.id, outcome.zernioPostId, outcome.linkedinUrl)

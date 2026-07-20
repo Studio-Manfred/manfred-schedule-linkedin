@@ -34,6 +34,43 @@ describe('ZernioPublisher', () => {
     expect(result).toEqual({ ok: true, zernioPostId: 'zp_1', linkedinUrl: 'https://linkedin.com/x' })
   })
 
+  it('attaches a first comment as LinkedIn platformSpecificData when provided', async () => {
+    const fetchImpl = makeFetch({
+      [`${BASE}/posts`]: (_url, init) => {
+        const body = JSON.parse(String(init?.body))
+        expect(body.platforms).toEqual([
+          {
+            platform: 'linkedin',
+            accountId: 'acc_1',
+            platformSpecificData: { firstComment: 'Read more: https://x.dev' },
+          },
+        ])
+        return json(201, { post: { _id: 'zp_fc', platforms: [] } })
+      },
+    })
+    const pub = new ZernioPublisher({ ...opts, fetchImpl })
+    const result = await pub.publish({
+      requestId: 'r-fc',
+      body: 'see comments for links',
+      images: [],
+      firstComment: 'Read more: https://x.dev',
+    })
+    expect(result.ok).toBe(true)
+  })
+
+  it('omits platformSpecificData when the first comment is empty or null', async () => {
+    const fetchImpl = makeFetch({
+      [`${BASE}/posts`]: (_url, init) => {
+        const body = JSON.parse(String(init?.body))
+        expect(body.platforms).toEqual([{ platform: 'linkedin', accountId: 'acc_1' }])
+        return json(201, { post: { _id: 'zp_nofc', platforms: [] } })
+      },
+    })
+    const pub = new ZernioPublisher({ ...opts, fetchImpl })
+    expect((await pub.publish({ requestId: 'r-e', body: 'x', images: [], firstComment: '' })).ok).toBe(true)
+    expect((await pub.publish({ requestId: 'r-n', body: 'x', images: [], firstComment: null })).ok).toBe(true)
+  })
+
   it('uploads images via presign before posting and passes altText', async () => {
     const calls: string[] = []
     const fetchImpl = makeFetch({

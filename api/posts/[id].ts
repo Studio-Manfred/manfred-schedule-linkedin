@@ -22,12 +22,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!EDITABLE.has(existing.status)) return sendJson(res, 409, { error: `cannot edit a ${existing.status} post` })
 
-  const merged = { body: req.body?.body ?? existing.body, images: req.body?.images ?? existing.images }
+  const merged = {
+    body: req.body?.body ?? existing.body,
+    images: req.body?.images ?? existing.images,
+    firstComment: req.body?.firstComment ?? existing.firstComment,
+  }
   const valid = validatePostInput(merged)
   if (!valid.ok) return sendJson(res, 422, { error: valid.error })
 
   const action = req.body?.action as 'draft' | 'queue' | 'pin' | undefined
-  let patch: Parameters<typeof posts.updatePost>[1] = { body: valid.value.body, images: valid.value.images }
+  let patch: Parameters<typeof posts.updatePost>[1] = {
+    body: valid.value.body,
+    images: valid.value.images,
+    firstComment: valid.value.firstComment,
+  }
   if (action === 'pin') {
     const at = new Date(req.body?.scheduledAt ?? NaN)
     if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now())

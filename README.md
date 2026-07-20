@@ -113,6 +113,10 @@ see `docs/superpowers/specs/2026-07-20-linkedin-scheduler-design.md`, Prerequisi
 - **Zernio idempotency:** every publish call sends `x-request-id: <post uuid>`; a `409`
   response means Zernio's 24h content-hash dedup already published identical content —
   treated as success.
+- **First comment:** a post can carry an optional first comment that Zernio auto-posts
+  immediately after publishing (`platformSpecificData.firstComment`). Put external links
+  here — LinkedIn suppresses posts with links in the body by ~40–50%. Blank means no
+  comment; the field is capped at 1,250 characters.
 
 ## Where the way-of-working lives
 

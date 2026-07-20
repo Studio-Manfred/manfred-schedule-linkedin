@@ -5,7 +5,26 @@ import { validatePostInput, validateSlots } from './validate'
 describe('validatePostInput', () => {
   it('accepts a valid text post', () => {
     const r = validatePostInput({ body: 'hello', images: [] })
-    expect(r).toEqual({ ok: true, value: { body: 'hello', images: [] } })
+    expect(r).toEqual({ ok: true, value: { body: 'hello', images: [], firstComment: null } })
+  })
+
+  it('accepts an optional first comment and normalises blank to null', () => {
+    const withComment = validatePostInput({ body: 'hi', images: [], firstComment: 'Link: https://x.dev' })
+    expect(withComment).toEqual({
+      ok: true,
+      value: { body: 'hi', images: [], firstComment: 'Link: https://x.dev' },
+    })
+    // omitted, empty and whitespace-only all collapse to null
+    for (const fc of [undefined, '', '   ']) {
+      const r = validatePostInput({ body: 'hi', images: [], firstComment: fc })
+      expect(r).toEqual({ ok: true, value: { body: 'hi', images: [], firstComment: null } })
+    }
+  })
+
+  it('rejects a non-string or over-limit first comment', () => {
+    expect(validatePostInput({ body: 'hi', images: [], firstComment: 123 }).ok).toBe(false)
+    expect(validatePostInput({ body: 'hi', images: [], firstComment: 'x'.repeat(1251) }).ok).toBe(false)
+    expect(validatePostInput({ body: 'hi', images: [], firstComment: 'x'.repeat(1250) }).ok).toBe(true)
   })
 
   it('rejects empty body and over-limit body', () => {
