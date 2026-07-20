@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core'
 import { buildMonthGrid, stockholmDayKey, stockholmTime, type DayCell } from '@/lib/calendar'
 import { TIMEZONE, type Post, type PostStatus } from '@/lib/types'
@@ -62,8 +64,8 @@ function Chip({
       onClick={() => onSelectPost(post)}
       aria-label={`${verb} ${time}: ${post.body.slice(0, 40)}`}
       className={`flex min-h-6 w-full items-center gap-1 rounded border border-border px-1 py-0.5 text-left text-xs ${
-        isDragging ? 'opacity-50' : ''
-      }`}
+        draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+      } ${isDragging ? 'opacity-40' : ''}`}
     >
       <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[post.status]}`} />
       <span className="tabular-nums">{time}</span>
@@ -72,6 +74,18 @@ function Chip({
         <img src={post.images[0].url} alt="" className="ml-auto h-4 w-4 rounded object-cover" />
       )}
     </button>
+  )
+}
+
+/** Non-interactive copy shown floating under the pointer while dragging. */
+export function DragOverlayChip({ post, timeZone }: { post: Post; timeZone: string }) {
+  const time = post.scheduledAt ? stockholmTime(post.scheduledAt, timeZone) : ''
+  return (
+    <div className="flex max-w-[12rem] cursor-grabbing items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs shadow-lg">
+      <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[post.status]}`} />
+      <span className="tabular-nums">{time}</span>
+      <span className="truncate">{post.body.slice(0, 24)}</span>
+    </div>
   )
 }
 
@@ -100,7 +114,7 @@ function Cell({
       ref={setNodeRef}
       className={`h-24 border border-border align-top ${
         cell.inCurrentMonth ? '' : 'bg-muted/40 text-muted-foreground'
-      } ${isOver ? 'ring-2 ring-primary ring-inset' : ''}`}
+      } ${isOver ? 'bg-primary/10 ring-2 ring-primary ring-inset' : ''}`}
     >
       <div className="flex items-center justify-between px-1 pt-1">
         <span
@@ -144,6 +158,7 @@ export function MonthCalendar({
   const baseYear = Number(baseKey.slice(0, 4))
   const baseMonth = Number(baseKey.slice(5, 7)) - 1
   const [ym, setYm] = useState({ year: baseYear, month: baseMonth })
+  const [activePost, setActivePost] = useState<Post | null>(null)
 
   // Pointer drag only. Distance activation keeps chip clicks (select) working.
   // Keyboard reschedule is served by the click → composer → edit-date path.
@@ -160,7 +175,12 @@ export function MonthCalendar({
       return { year, month: m }
     })
 
+  function onDragStart(e: DragStartEvent) {
+    setActivePost((e.active.data.current?.post as Post | undefined) ?? null)
+  }
+
   function onDragEnd(e: DragEndEvent) {
+    setActivePost(null)
     const post = e.active.data.current?.post as Post | undefined
     const dayKey = e.over?.data.current?.dayKey as string | undefined
     if (!post || !dayKey) return
@@ -199,7 +219,12 @@ export function MonthCalendar({
           {title}
         </h2>
       </div>
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => setActivePost(null)}
+      >
         <table className="w-full table-fixed border-collapse">
           <caption className="sr-only">Scheduled posts for {title}</caption>
           <thead>
@@ -229,6 +254,9 @@ export function MonthCalendar({
             ))}
           </tbody>
         </table>
+        <DragOverlay dropAnimation={null}>
+          {activePost ? <DragOverlayChip post={activePost} timeZone={timeZone} /> : null}
+        </DragOverlay>
       </DndContext>
     </div>
   )
