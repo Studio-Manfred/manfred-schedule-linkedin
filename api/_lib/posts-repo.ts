@@ -1,5 +1,5 @@
-import type { Post, PostImage, PostStatus } from '../../src/lib/types'
-import { sql } from './db'
+import type { Post, PostImage, PostStatus } from '../../src/lib/types.js'
+import { sql } from './db.js'
 
 export interface NewPost {
   body: string

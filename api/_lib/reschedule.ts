@@ -1,7 +1,7 @@
-import { dealSchedule } from '../../src/lib/queue'
-import type { Slot } from '../../src/lib/types'
-import * as postsRepo from './posts-repo'
-import * as slotsRepo from './slots-repo'
+import { dealSchedule } from '../../src/lib/queue.js'
+import type { Slot } from '../../src/lib/types.js'
+import * as postsRepo from './posts-repo.js'
+import * as slotsRepo from './slots-repo.js'
 
 export interface RescheduleDeps {
   listSlots(): Promise<Slot[]>

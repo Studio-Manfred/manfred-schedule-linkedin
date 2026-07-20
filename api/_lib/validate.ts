@@ -1,4 +1,4 @@
-import { MAX_BODY_LENGTH, MAX_IMAGES, type PostImage } from '../../src/lib/types'
+import { MAX_BODY_LENGTH, MAX_IMAGES, type PostImage } from '../../src/lib/types.js'
 
 export interface ValidPostInput {
   body: string

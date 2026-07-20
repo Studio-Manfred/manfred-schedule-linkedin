@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { methodIs, requireAuth, sendJson } from '../_lib/http'
-import { validatePostInput } from '../_lib/validate'
-import { recomputeQueueLive } from '../_lib/reschedule'
-import * as posts from '../_lib/posts-repo'
-import * as slots from '../_lib/slots-repo'
+import { methodIs, requireAuth, sendJson } from '../_lib/http.js'
+import { validatePostInput } from '../_lib/validate.js'
+import { recomputeQueueLive } from '../_lib/reschedule.js'
+import * as posts from '../_lib/posts-repo.js'
+import * as slots from '../_lib/slots-repo.js'
 
 const EDITABLE = new Set(['draft', 'queued', 'failed', 'missed'])
 

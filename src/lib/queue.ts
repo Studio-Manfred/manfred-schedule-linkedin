@@ -1,5 +1,5 @@
 import { TZDate } from '@date-fns/tz'
-import { TIMEZONE, type Slot } from './types'
+import { TIMEZONE, type Slot } from './types.js'
 
 /** ISO weekday (0 = Monday … 6 = Sunday) of a TZDate. */
 function isoWeekday(d: TZDate): number {

@@ -1,5 +1,5 @@
-import { MAX_ATTEMPTS, MISSED_WINDOW_MINUTES, STUCK_PUBLISHING_MINUTES, type Post } from '../../src/lib/types'
-import type { Publisher } from './publisher'
+import { MAX_ATTEMPTS, MISSED_WINDOW_MINUTES, STUCK_PUBLISHING_MINUTES, type Post } from '../../src/lib/types.js'
+import type { Publisher } from './publisher.js'
 
 export interface TickDeps {
   now(): Date

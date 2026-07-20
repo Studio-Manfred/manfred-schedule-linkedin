@@ -1,5 +1,5 @@
-import type { Slot } from '../../src/lib/types'
-import { sql } from './db'
+import type { Slot } from '../../src/lib/types.js'
+import { sql } from './db.js'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function listSlots(): Promise<Slot[]> {

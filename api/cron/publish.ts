@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { sendJson } from '../_lib/http'
-import { runPublishTick } from '../_lib/publish-tick'
-import { ZernioPublisher } from '../_lib/publisher'
-import * as posts from '../_lib/posts-repo'
+import { sendJson } from '../_lib/http.js'
+import { runPublishTick } from '../_lib/publish-tick.js'
+import { ZernioPublisher } from '../_lib/publisher.js'
+import * as posts from '../_lib/posts-repo.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const secret = process.env.CRON_SECRET

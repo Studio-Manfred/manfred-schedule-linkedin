@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { CLEAR_COOKIE, methodIs } from '../_lib/http'
+import { CLEAR_COOKIE, methodIs } from '../_lib/http.js'
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodIs(req, res, 'POST')) return

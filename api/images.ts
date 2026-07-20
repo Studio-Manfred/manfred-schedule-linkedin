@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { put } from '@vercel/blob'
-import { methodIs, requireAuth, sendJson } from './_lib/http'
+import { methodIs, requireAuth, sendJson } from './_lib/http.js'
 
 export const config = { api: { bodyParser: false } }
 

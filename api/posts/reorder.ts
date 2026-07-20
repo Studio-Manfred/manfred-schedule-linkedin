@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { methodIs, requireAuth, sendJson } from '../_lib/http'
-import { recomputeQueueLive } from '../_lib/reschedule'
-import * as posts from '../_lib/posts-repo'
+import { methodIs, requireAuth, sendJson } from '../_lib/http.js'
+import { recomputeQueueLive } from '../_lib/reschedule.js'
+import * as posts from '../_lib/posts-repo.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodIs(req, res, 'POST')) return

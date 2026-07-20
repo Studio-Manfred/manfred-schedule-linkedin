@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifySession } from './session'
+import { verifySession } from './session.js'
 
 export function readCookie(req: VercelRequest, name: string): string | undefined {
   const header = req.headers.cookie ?? ''

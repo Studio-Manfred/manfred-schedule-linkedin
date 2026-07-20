@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { methodIs, requireAuth, sendJson } from './_lib/http'
-import { validateSlots } from './_lib/validate'
-import { recomputeQueueLive } from './_lib/reschedule'
-import * as slots from './_lib/slots-repo'
+import { methodIs, requireAuth, sendJson } from './_lib/http.js'
+import { validateSlots } from './_lib/validate.js'
+import { recomputeQueueLive } from './_lib/reschedule.js'
+import * as slots from './_lib/slots-repo.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodIs(req, res, 'GET', 'PUT')) return

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { methodIs, sendJson, SESSION_COOKIE } from '../_lib/http'
-import { checkPassword, createSession } from '../_lib/session'
+import { methodIs, sendJson, SESSION_COOKIE } from '../_lib/http.js'
+import { checkPassword, createSession } from '../_lib/session.js'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
