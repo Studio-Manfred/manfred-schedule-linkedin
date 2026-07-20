@@ -3,6 +3,7 @@ import { methodIs, requireAuth, sendJson } from '../_lib/http'
 import { validatePostInput } from '../_lib/validate'
 import { recomputeQueueLive } from '../_lib/reschedule'
 import * as posts from '../_lib/posts-repo'
+import * as slots from '../_lib/slots-repo'
 
 const EDITABLE = new Set(['draft', 'queued', 'failed', 'missed'])
 
@@ -33,6 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendJson(res, 422, { error: 'pin requires a future scheduledAt' })
     patch = { ...patch, status: 'queued', pinned: true, position: null, scheduledAt: at, attempts: 0, error: null }
   } else if (action === 'queue') {
+    if ((await slots.listSlots()).length === 0)
+      return sendJson(res, 422, { error: 'no posting slots configured — add slots in Settings or pin a time' })
     patch = {
       ...patch,
       status: 'queued',

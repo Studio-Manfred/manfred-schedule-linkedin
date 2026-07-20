@@ -8,9 +8,10 @@ export async function listSlots(): Promise<Slot[]> {
 }
 
 export async function replaceSlots(slots: { weekday: number; timeLocal: string }[]): Promise<Slot[]> {
-  await sql()`DELETE FROM schedule_slots`
-  for (const s of slots) {
-    await sql()`INSERT INTO schedule_slots (weekday, time_local) VALUES (${s.weekday}, ${s.timeLocal})`
-  }
+  const sqlc = sql()
+  await sqlc.transaction([
+    sqlc`DELETE FROM schedule_slots`,
+    ...slots.map((s) => sqlc`INSERT INTO schedule_slots (weekday, time_local) VALUES (${s.weekday}, ${s.timeLocal})`),
+  ])
   return listSlots()
 }

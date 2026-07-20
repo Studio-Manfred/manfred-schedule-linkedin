@@ -85,7 +85,7 @@ export function ComposerScreen() {
   }
 
   return (
-    <form onSubmit={(e) => submit('queue', e)} className="flex flex-col gap-6">
+    <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">{editId ? 'Edit post' : 'Compose'}</h1>
       <label className="flex flex-col gap-1">
         <span>Post text</span>
@@ -105,7 +105,7 @@ export function ComposerScreen() {
       {error && <p role="alert" className="text-destructive">{error}</p>}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="brand" disabled={busy || invalid || slots.length === 0}>
+        <Button type="button" variant="brand" disabled={busy || invalid || slots.length === 0} onClick={() => submit('queue')}>
           Add to queue
         </Button>
         {slots.length === 0 ? (
