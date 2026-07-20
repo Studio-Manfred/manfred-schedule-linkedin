@@ -145,8 +145,7 @@ export interface MonthCalendarProps {
   Tab order is sufficient and accessible for v1.)
 
 **Drag-to-reschedule.** Reuses **dnd-kit** (already a dependency, already used for
-the queue reorder), so we get pointer **and** keyboard dragging plus built-in
-screen-reader announcements.
+the queue reorder) for pointer dragging.
 
 - A single `DndContext` wraps the grid. **Draggable** = chips whose post status is
   `queued | failed | missed` (via `useDraggable`). **Published** chips are not
@@ -156,9 +155,14 @@ screen-reader announcements.
 - On drag end, if dropped over a valid future/today cell **and** the day actually
   changed, call `onReschedule(post, targetDayKey)`. Dropping on the same day, a
   past cell, or outside the grid is a no-op (chip snaps back).
-- Sensors mirror the queue: `PointerSensor` (small activation distance so chip
-  clicks still fire `onSelectPost`) + `KeyboardSensor`, so a chip can be picked up
-  with Space/Enter and moved with arrow keys — reschedule is fully keyboard-driven.
+- Sensor: `PointerSensor` with a small activation distance so a plain chip click
+  still fires `onSelectPost`.
+- **a11y of dragging (WCAG 2.2 SC 2.5.7):** the drag is an *enhancement*, not the
+  only way to reschedule. The non-drag, single-pointer / keyboard alternative is
+  the existing **click-a-chip → composer → change the pinned date** path. We do
+  **not** ship brittle 2D-grid keyboard drag in v1 (dnd-kit's default keyboard
+  coordinate stepping doesn't cross calendar cells cleanly and would hijack the
+  chip's Enter/Space select). Keyboard and AT users reschedule via the composer.
 - The reschedule itself (computing the new instant + calling the API) lives in the
   Queue screen's `onReschedule` handler, keeping `MonthCalendar` presentational.
 
@@ -262,9 +266,10 @@ composer (edit or pin) or opens LinkedIn.
 **E2E `e2e/scheduler.spec.ts`** (+ axe):
 - Open Queue → click "Monthly View" → calendar visible → **axe sweep clean**
   (WCAG 2.2 AA), keyboard reachable.
-- Keyboard-drag a chip to another day and assert the reschedule PATCH fires
-  (mirrors the existing keyboard-reorder E2E; skipped on the mobile project like
-  that one).
+- Pointer drag-to-reschedule is verified with a **throwaway** Playwright spec
+  (mouse-drag a chip to another day, assert the pin PATCH fires, screenshot the
+  grid, then delete the spec) rather than a committed flaky drag test. The
+  reschedule routing is unit-tested; the keyboard path is the composer edit flow.
 
 ## Files
 
@@ -279,9 +284,9 @@ the queue reorder), `@date-fns/tz` for `rescheduleIso`.
 ## Global constraints
 
 - Accessibility is non-negotiable: semantic `<table>`, real buttons, aria-labels,
-  aria-live month announcements; drag-to-reschedule works by keyboard (dnd-kit
-  `KeyboardSensor` + announcements), not pointer-only; the new tab is covered by
-  the axe sweep.
+  aria-live month announcements; the new tab is covered by the axe sweep. Pointer
+  drag-to-reschedule is an enhancement whose keyboard / single-pointer alternative
+  (WCAG 2.2 SC 2.5.7) is the click-a-chip → composer → edit-date path.
 - Europe/Stockholm throughout; Monday-first week (matches app's sv-SE locale and
   Settings' Monday-first weekdays where weekday 0 = Monday).
 - No new dependencies; no new API endpoint.
