@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { validatePostInput } from './validate'
+import { validatePostInput, validateSlots } from './validate'
 
 describe('validatePostInput', () => {
   it('accepts a valid text post', () => {
@@ -25,5 +25,18 @@ describe('validatePostInput', () => {
   it('rejects non-object input', () => {
     expect(validatePostInput(null).ok).toBe(false)
     expect(validatePostInput('str').ok).toBe(false)
+  })
+})
+
+describe('validateSlots', () => {
+  it('accepts valid slots', () => {
+    expect(validateSlots([{ weekday: 0, timeLocal: '08:30' }, { weekday: 6, timeLocal: '23:59' }]).ok).toBe(true)
+  })
+  it('rejects bad weekday, bad time format, non-array', () => {
+    expect(validateSlots([{ weekday: 7, timeLocal: '08:30' }]).ok).toBe(false)
+    expect(validateSlots([{ weekday: -1, timeLocal: '08:30' }]).ok).toBe(false)
+    expect(validateSlots([{ weekday: 1, timeLocal: '8:30' }]).ok).toBe(false)
+    expect(validateSlots([{ weekday: 1, timeLocal: '25:00' }]).ok).toBe(false)
+    expect(validateSlots('x').ok).toBe(false)
   })
 })

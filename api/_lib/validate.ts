@@ -22,3 +22,19 @@ export function validatePostInput(
   }
   return { ok: true, value: { body, images: images as PostImage[] } }
 }
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+
+export function validateSlots(
+  input: unknown,
+): { ok: true; value: { weekday: number; timeLocal: string }[] } | { ok: false; error: string } {
+  if (!Array.isArray(input)) return { ok: false, error: 'slots must be an array' }
+  for (const s of input) {
+    const { weekday, timeLocal } = (s ?? {}) as { weekday?: unknown; timeLocal?: unknown }
+    if (typeof weekday !== 'number' || weekday < 0 || weekday > 6 || !Number.isInteger(weekday))
+      return { ok: false, error: 'weekday must be an integer 0 (Mon) … 6 (Sun)' }
+    if (typeof timeLocal !== 'string' || !TIME_RE.test(timeLocal))
+      return { ok: false, error: 'timeLocal must be HH:MM (24h)' }
+  }
+  return { ok: true, value: input as { weekday: number; timeLocal: string }[] }
+}
