@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "migrate": "node scripts/migrate.mjs",
     "typecheck": "tsc -b --noEmit",
     "typecheck:api": "tsc -p api",
     "test": "vitest",
