@@ -27,7 +27,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@neondatabase/serverless": "^1.1.0",
-    "@studio-manfred/manfred-design-system": "^0.22.0",
+    "@studio-manfred/manfred-design-system": "^0.33.0",
     "@vercel/blob": "^2.6.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
