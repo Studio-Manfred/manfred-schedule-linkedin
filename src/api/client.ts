@@ -71,6 +71,10 @@ export const api = {
       headers: { 'Content-Type': file.type },
       body: file,
     })
+    if (res.status === 401) {
+      window.location.assign('/login')
+      throw new ApiError(401, 'unauthorized')
+    }
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string }
       throw new ApiError(res.status, data.error ?? 'upload failed')
