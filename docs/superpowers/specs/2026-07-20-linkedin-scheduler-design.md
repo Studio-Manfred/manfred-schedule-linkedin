@@ -93,9 +93,12 @@ Invariant: **every queued post always has a concrete `scheduled_at`.**
 1. `SELECT` posts with `status = 'queued' AND scheduled_at <= now()`.
 2. For each, atomically claim: `UPDATE posts SET status='publishing', attempts = attempts + 1 WHERE id = $1 AND status = 'queued' RETURNING *` — overlapping ticks cannot double-post.
 3. **Missed-window guard:** if `scheduled_at` is more than 60 minutes in the past, set `status = 'missed'` instead of publishing (held for manual decision).
-4. Call Zernio `POST /posts` with `publishNow: true`, the LinkedIn `accountId`, body text, and image references.
-5. On success → `status='published'`, store `zernio_post_id` + `linkedin_url`. On failure → back to `queued` if `attempts < 3` (retried next tick), else `status='failed'` with Zernio's error message.
-6. **Sweeper:** any post stuck in `publishing` for > 10 minutes → `failed` (with note). One failed post never blocks the rest of the queue.
+4. **Media hand-off (image posts):** for each image, `POST /v1/media/presign` at Zernio, PUT the binary (fetched from Vercel Blob) to the returned `uploadUrl`, and collect the `publicUrl`s. Zernio media URLs are temp storage — that's why Blob remains our durable copy.
+5. Call Zernio `POST /v1/posts` with `publishNow: true`, the LinkedIn `accountId`, body text, and `mediaItems: [{ url, type: 'image', altText }]`, plus header `x-request-id: <our post uuid>` (Zernio idempotency: a retried identical request returns the original post instead of double-posting).
+6. On success → `status='published'`, store `zernio_post_id` + `linkedin_url`. **HTTP 409 (content-hash dedup)** means the identical content already published within 24h → treat as success, store `existingPostId`. Other failures → back to `queued` if `attempts < 3` (retried next tick), else `status='failed'` with Zernio's error message.
+7. **Sweeper:** any post stuck in `publishing` for > 10 minutes → `failed` (with note). One failed post never blocks the rest of the queue.
+
+LinkedIn via Zernio allows up to 20 images per post; the composer enforces this cap.
 
 ## Screens
 
@@ -151,7 +154,10 @@ TDD throughout (WoW).
 3. **Provisioning:** GitHub repo (Studio-Manfred, private), Vercel project (Pro account; add Neon + Blob from Marketplace), Linear team prefix STU per WoW.
 4. New DS-consuming repos 403 in CI until granted Actions access on the `manfred-design-system` package (one-time, UI-only — known gotcha).
 
-## Open items (resolve during implementation, none block the design)
+## Resolved during design review (from Zernio full docs, `docs/llms-full.txt`)
 
-- Exact Zernio media parameter: whether images are passed as public URLs (Vercel Blob URLs) in `createPost` or uploaded to a Zernio media endpoint first — confirm against `docs.zernio.com/guides/media-uploads`.
-- Whether Zernio forwards per-image alt text to LinkedIn; if not, alt text is still stored on our side and the limitation is noted in the UI.
+- **Media parameter:** confirmed — presign → PUT binary → `mediaItems: [{ url, type }]`. Zernio media URLs are temp storage, so Vercel Blob stays as our durable image store; upload to Zernio happens at publish time (see Publish flow).
+- **Idempotency:** confirmed — `x-request-id` header (our post UUID) + 24h content-hash dedup (409 → treat as already-published success).
+- **Alt text:** Zernio's post-read schema exposes `altText` on media items, but create-side support for LinkedIn isn't explicitly documented. We store alt text in our DB regardless, send it in `mediaItems`, and verify it reaches LinkedIn during implementation; if it doesn't, note the limitation in the composer UI.
+
+The Zernio API key exists and is held by Jens — supplied as `ZERNIO_API_KEY` during Vercel env setup, never committed.
