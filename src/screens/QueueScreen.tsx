@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Button } from '@studio-manfred/manfred-design-system'
+import { Badge, Button } from '@studio-manfred/manfred-design-system'
 import { api } from '@/api/client'
 import { PostCard } from '@/components/PostCard'
 import type { Post } from '@/lib/types'
@@ -108,9 +108,16 @@ export function QueueScreen() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={tab === t ? 'border-b-2 border-foreground px-3 py-2 font-medium' : 'px-3 py-2'}
+            className={
+              tab === t
+                ? 'flex items-center gap-2 border-b-2 border-foreground px-3 py-2 font-medium'
+                : 'flex items-center gap-2 px-3 py-2'
+            }
           >
-            {t === 'queue' ? `Upcoming (${upcoming.length})` : `Drafts (${drafts.length})`}
+            {t === 'queue' ? 'Upcoming' : 'Drafts'}
+            <Badge variant="neutral" size="sm">
+              {t === 'queue' ? upcoming.length : drafts.length}
+            </Badge>
           </button>
         ))}
       </div>
