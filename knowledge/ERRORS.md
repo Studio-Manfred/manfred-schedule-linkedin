@@ -55,6 +55,36 @@ Format:
   the naive `/(.*)` catch-all silently breaks every dynamic API route.
 - **Graduated to:** ship-with-the-stack gotcha for SPA + `api/` functions on Vercel.
 
+## 2026-07-20 — first PR from a new DS-consuming repo 403s in CI
+
+- **Symptom:** the repo's first GitHub Actions run failed at `npm ci` with
+  `403 Forbidden - GET https://npm.pkg.github.com/download/@studio-manfred/manfred-design-system/...`
+  `permission_denied: read_package`. Local installs and Vercel builds were fine (Vercel
+  uses its own token).
+- **Cause:** the private DS package is a GitHub Packages npm package. A *different* repo's
+  Actions token (`GITHUB_TOKEN`, even with `permissions: packages: read`) can only pull it
+  once that repo is added to the package's **Manage Actions access** allow-list. The repo
+  workflow was already correct; the grant simply hadn't been made for this repo.
+- **Fix / conclusion:** org admin → the `manfred-design-system` package → Package settings →
+  Manage Actions access → add this repo with **Read**, then re-run. One-time per repo.
+- **Graduated to:** already a cross-project fact in auto-memory (`new-repo-ds-ci-access`).
+
+## 2026-07-20 — testing/tooling gotchas (drag + dialog feature wave)
+
+- **Coverage ratchet is a CI gate — run it locally.** Skipping `npm run coverage:check`
+  before pushing let a branch-coverage dip (new dnd-kit `DragOverlay` code) fail CI.
+  Recovered by exporting + unit-testing the presentational overlay. Always run
+  `npm run test:coverage && npm run coverage:check` (and `AXE_ENFORCE=1 npm run test:e2e`)
+  before pushing.
+- **Playwright reuses a running preview server.** `playwright.config.ts` sets
+  `reuseExistingServer: !CI`, so a throwaway/E2E run can silently serve a *stale* build
+  from an earlier invocation (dialog code "missing"). Kill lingering `vite preview`
+  processes (port 4173) before a fresh throwaway, or confirm `dist/` contains the new code.
+- **`getByRole('button', { name: /delete/i })` matches by substring.** A post card whose
+  body was "A post I might delete" made the card's own activator button match `/delete/i`,
+  so `.first()` clicked the card, not the Delete action. Use `{ name: 'Delete', exact: true }`
+  (and scope with `within(card)`), or avoid the matched word in fixture text.
+
 ## Seeded stack gotchas (ship with the starter — not incidents in this repo)
 
 These were hit downstream (manfred-workshops, 2026-07-13) and will recur in any project

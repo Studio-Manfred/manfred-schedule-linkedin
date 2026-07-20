@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 0.2.0 — 2026-07-20
+
 ### Added
 - Composer: optional **first comment**, auto-posted right after the post publishes. Sent to
   Zernio as `platformSpecificData.firstComment` on the LinkedIn platform entry (omitted when
@@ -21,11 +23,11 @@
 - Queue: deleting a post now opens a design-system confirmation dialog (Cancel / Delete
   post) instead of the browser's native `confirm`. (STU-672)
 
-## 0.1.0 — 2026-07-20 (pending first production deploy)
+## 0.1.0 — 2026-07-20
 
-Initial build: single-user LinkedIn scheduler. Backend, all five frontend screens, and
-the E2E/accessibility suite are complete and passing locally; Task 17 (provisioning +
-first production deploy) has not run yet, so this version is not live.
+Initial production release: single-user LinkedIn scheduler — backend, all five frontend
+screens, and the E2E/accessibility suite. Provisioned (Zernio + Vercel + Neon + Blob) and
+deployed to production; a real post has published to LinkedIn.
 
 - Buffer-style queue slots (Europe/Stockholm) with automatic date dealing and a
   per-post pin-to-exact-time override
