@@ -36,13 +36,23 @@ describe('QueueScreen', () => {
     expect(screen.getByText(/pinned/i)).toBeInTheDocument()
   })
 
-  it('moves a post down via keyboard button and calls reorder', async () => {
-    vi.mocked(api.reorder).mockResolvedValue([])
+  it('exposes each unpinned card as a draggable reorder handle', async () => {
     render(<MemoryRouter><QueueScreen /></MemoryRouter>)
     await screen.findByText(/post a/)
-    const first = screen.getAllByRole('listitem')[0]!
-    await userEvent.click(within(first).getByRole('button', { name: /move down/i }))
-    expect(api.reorder).toHaveBeenCalledWith(['b', 'a'])
+    // dnd-kit marks the activator with role="button" + aria-roledescription="sortable".
+    const handles = screen.getAllByRole('button').filter((el) => el.getAttribute('aria-roledescription') === 'sortable')
+    expect(handles.length).toBe(2) // a + b (pinned + draft are not draggable)
+    // No standalone move buttons remain.
+    expect(screen.queryByRole('button', { name: /move up|move down/i })).toBeNull()
+  })
+
+  it('deletes a post via the Delete action', async () => {
+    vi.mocked(api.deletePost).mockResolvedValue()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<MemoryRouter><QueueScreen /></MemoryRouter>)
+    const first = (await screen.findAllByRole('listitem'))[0]!
+    await userEvent.click(within(first).getByRole('button', { name: /delete/i }))
+    expect(api.deletePost).toHaveBeenCalledWith('a')
   })
 
   it('shows drafts under the Drafts tab', async () => {

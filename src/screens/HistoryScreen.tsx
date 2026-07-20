@@ -27,24 +27,31 @@ export function HistoryScreen() {
       <ul className="flex flex-col gap-3">
         {done.map((p) => (
           <li key={p.id}>
-            <PostCard post={p}>
-              <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium capitalize">
-                {p.status}
-              </span>
-              {p.status === 'published' &&
-                (p.linkedinUrl ? (
-                  <a href={p.linkedinUrl} target="_blank" rel="noreferrer" className="underline">
-                    View on LinkedIn
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground text-sm">Published via Zernio (no direct link returned)</span>
-                ))}
-              {(p.status === 'failed' || p.status === 'missed') && (
-                <Button type="button" variant="ghost" onClick={() => retry(p.id)}>
-                  Retry
-                </Button>
-              )}
-            </PostCard>
+            <PostCard
+              post={p}
+              actions={
+                <>
+                  <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium capitalize">
+                    {p.status}
+                  </span>
+                  {p.status === 'published' &&
+                    (p.linkedinUrl ? (
+                      <a href={p.linkedinUrl} target="_blank" rel="noreferrer" className="underline">
+                        View on LinkedIn
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">
+                        Published via Zernio (no direct link returned)
+                      </span>
+                    ))}
+                  {(p.status === 'failed' || p.status === 'missed') && (
+                    <Button type="button" variant="ghost" onClick={() => retry(p.id)}>
+                      Retry
+                    </Button>
+                  )}
+                </>
+              }
+            />
           </li>
         ))}
       </ul>

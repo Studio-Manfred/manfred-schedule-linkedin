@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button } from '@studio-manfred/manfred-design-system'
+import { Button, Card } from '@studio-manfred/manfred-design-system'
 import { api, ApiError } from '@/api/client'
 import { dealSchedule } from '@/lib/queue'
 import { MAX_BODY_LENGTH, TIMEZONE, type Post, type PostImage, type Slot } from '@/lib/types'
@@ -39,11 +39,16 @@ export function ComposerScreen() {
           setImages(post.images)
           if (post.pinned && post.scheduledAt) {
             const parts = new Intl.DateTimeFormat('sv-SE', {
-              timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
-              hour: '2-digit', minute: '2-digit', hour12: false,
+              timeZone: TIMEZONE,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
             }).formatToParts(new Date(post.scheduledAt))
-            const p = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
-            setPinAt(`${p('year')}-${p('month')}-${p('day')}T${p('hour')}:${p('minute')}`)
+            const at = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
+            setPinAt(`${at('year')}-${at('month')}-${at('day')}T${at('hour')}:${at('minute')}`)
           }
         }
       }
@@ -51,7 +56,9 @@ export function ComposerScreen() {
   }, [editId])
 
   const nextSlot = useMemo(() => {
-    const queued = posts.filter((p) => p.status === 'queued' && !p.pinned && p.id !== editId).map((p) => p.id)
+    const queued = posts
+      .filter((p) => p.status === 'queued' && !p.pinned && p.id !== editId)
+      .map((p) => p.id)
     const pinnedTimes = posts
       .filter((p) => p.status === 'queued' && p.pinned && p.scheduledAt && p.id !== editId)
       .map((p) => new Date(p.scheduledAt!))
@@ -61,10 +68,10 @@ export function ComposerScreen() {
 
   const remaining = MAX_BODY_LENGTH - body.length
   const altMissing = images.some((i) => i.alt.trim().length === 0)
-  const invalid = body.trim().length === 0 || remaining < 0 || altMissing
+  const emptyBody = body.trim().length === 0
+  const invalid = emptyBody || remaining < 0 || altMissing
 
-  async function submit(action: 'draft' | 'queue' | 'pin', e?: FormEvent) {
-    e?.preventDefault()
+  async function submit(action: 'draft' | 'queue' | 'pin') {
     setBusy(true)
     setError(null)
     try {
@@ -87,51 +94,90 @@ export function ComposerScreen() {
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">{editId ? 'Edit post' : 'Compose'}</h1>
-      <label className="flex flex-col gap-1">
-        <span>Post text</span>
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={10}
-          className="rounded-md border border-input bg-background px-3 py-2"
-        />
-        <span aria-live="polite" className={remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}>
-          {remaining.toLocaleString('sv-SE')} characters left
-        </span>
-      </label>
 
-      <ImageAttach images={images} onChange={setImages} />
-      {altMissing && <p className="text-muted-foreground">Add alt text to every image before scheduling.</p>}
-      {error && <p role="alert" className="text-destructive">{error}</p>}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="brand" disabled={busy || invalid || slots.length === 0} onClick={() => submit('queue')}>
-          Add to queue
-        </Button>
-        {slots.length === 0 ? (
-          <p className="text-muted-foreground">No posting slots configured — add slots in Settings or pin a time.</p>
-        ) : (
-          nextSlot && <p className="text-muted-foreground">Next slot: {fmt.format(nextSlot)}</p>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-2">
         <label className="flex flex-col gap-1">
-          <span>Pin to date &amp; time</span>
-          <input
-            type="datetime-local"
-            value={pinAt}
-            onChange={(e) => setPinAt(e.target.value)}
+          <span className="font-medium">Post text</span>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={10}
             className="rounded-md border border-input bg-background px-3 py-2"
           />
         </label>
-        <Button type="button" disabled={busy || invalid || !pinAt} onClick={() => submit('pin')}>
-          Pin
-        </Button>
-        <Button type="button" variant="ghost" disabled={busy || body.trim().length === 0} onClick={() => submit('draft')}>
-          Save draft
-        </Button>
+        <div className="flex items-center justify-between gap-3">
+          <span
+            aria-live="polite"
+            className={remaining < 0 ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}
+          >
+            {remaining.toLocaleString('sv-SE')} characters left
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={busy || emptyBody}
+            onClick={() => submit('draft')}
+          >
+            Save draft
+          </Button>
+        </div>
       </div>
+
+      <ImageAttach images={images} onChange={setImages} />
+      {altMissing && (
+        <p className="text-muted-foreground">Add alt text to every image before scheduling.</p>
+      )}
+      {error && (
+        <p role="alert" className="text-destructive">
+          {error}
+        </p>
+      )}
+
+      <Card as="section" aria-labelledby="schedule-heading" className="flex flex-col gap-4">
+        <h2 id="schedule-heading" className="font-medium">
+          Schedule this post
+        </h2>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="brand"
+            disabled={busy || invalid || slots.length === 0}
+            onClick={() => submit('queue')}
+          >
+            Add to queue
+          </Button>
+          {slots.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No posting slots configured — add some in Settings, or pin a time below.
+            </p>
+          ) : (
+            nextSlot && <p className="text-sm text-muted-foreground">Next slot: {fmt.format(nextSlot)}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+          <span className="h-px flex-1 bg-border" aria-hidden="true" />
+          or
+          <span className="h-px flex-1 bg-border" aria-hidden="true" />
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="font-medium">Pin to a specific date &amp; time</span>
+            <input
+              type="datetime-local"
+              value={pinAt}
+              onChange={(e) => setPinAt(e.target.value)}
+              className="rounded-md border border-input bg-background px-3 py-2"
+            />
+          </label>
+          <Button type="button" disabled={busy || invalid || !pinAt} onClick={() => submit('pin')}>
+            Pin
+          </Button>
+        </div>
+      </Card>
     </form>
   )
 }

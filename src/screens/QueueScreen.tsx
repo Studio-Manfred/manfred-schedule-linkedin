@@ -1,46 +1,53 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@studio-manfred/manfred-design-system'
 import { api } from '@/api/client'
 import { PostCard } from '@/components/PostCard'
 import type { Post } from '@/lib/types'
 
-function SortableItem({ post, onMove, onDelete, index, total }: {
-  post: Post
-  index: number
-  total: number
-  onMove: (id: string, dir: -1 | 1) => void
-  onDelete: (id: string) => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: post.id })
+function CardActions({ post, onDelete }: { post: Post; onDelete: (id: string) => void }) {
   return (
-    <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}>
-      <PostCard post={post}>
-        <button
-          type="button"
-          className="cursor-grab rounded border border-border px-2 py-1 text-sm"
-          aria-label={`Drag to reorder: ${post.body.slice(0, 40)}`}
-          {...attributes}
-          {...listeners}
-        >
-          ⠿ Drag
-        </button>
-        <Button type="button" variant="ghost" disabled={index === 0} aria-label="Move up" onClick={() => onMove(post.id, -1)}>
-          ↑ Move up
-        </Button>
-        <Button type="button" variant="ghost" disabled={index === total - 1} aria-label="Move down" onClick={() => onMove(post.id, 1)}>
-          ↓ Move down
-        </Button>
-        <Button type="button" variant="ghost" asChild>
-          <Link to={`/compose?edit=${post.id}`}>Edit</Link>
-        </Button>
-        <Button type="button" variant="ghost" onClick={() => onDelete(post.id)}>
-          Delete
-        </Button>
-      </PostCard>
+    <>
+      <Button type="button" variant="ghost" asChild>
+        <Link to={`/compose?edit=${post.id}`}>Edit</Link>
+      </Button>
+      <Button type="button" variant="ghost" onClick={() => onDelete(post.id)}>
+        Delete
+      </Button>
+    </>
+  )
+}
+
+function SortableItem({ post, onDelete }: { post: Post; onDelete: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: post.id })
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
+    >
+      <PostCard
+        post={post}
+        dragHandle={{ ref: setActivatorNodeRef, attributes, listeners }}
+        actions={<CardActions post={post} onDelete={onDelete} />}
+      />
     </li>
   )
 }
@@ -48,6 +55,11 @@ function SortableItem({ post, onMove, onDelete, index, total }: {
 export function QueueScreen() {
   const [posts, setPosts] = useState<Post[]>([])
   const [tab, setTab] = useState<'queue' | 'drafts'>('queue')
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const load = useCallback(() => api.listPosts().then(setPosts), [])
   useEffect(() => {
@@ -65,14 +77,6 @@ export function QueueScreen() {
 
   async function persistOrder(orderedIds: string[]) {
     setPosts(await api.reorder(orderedIds))
-  }
-
-  function move(id: string, dir: -1 | 1) {
-    const ids = unpinned.map((p) => p.id)
-    const from = ids.indexOf(id)
-    const to = from + dir
-    if (to < 0 || to >= ids.length) return
-    void persistOrder(arrayMove(ids, from, to))
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -111,56 +115,45 @@ export function QueueScreen() {
         ))}
       </div>
 
-      {tab === 'queue' && (
-        upcoming.length === 0 ? (
+      {tab === 'queue' &&
+        (upcoming.length === 0 ? (
           <p className="text-muted-foreground">
-            Nothing queued. <Link to="/compose" className="underline">Write your first post</Link>.
+            Nothing queued.{' '}
+            <Link to="/compose" className="underline">
+              Write your first post
+            </Link>
+            .
           </p>
         ) : (
-          <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={unpinned.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-              <ul className="flex flex-col gap-3">
-                {upcoming.map((p) =>
-                  p.pinned ? (
-                    <li key={p.id}>
-                      <PostCard post={p}>
-                        <Button type="button" variant="ghost" asChild>
-                          <Link to={`/compose?edit=${p.id}`}>Edit</Link>
-                        </Button>
-                        <Button type="button" variant="ghost" onClick={() => remove(p.id)}>
-                          Delete
-                        </Button>
-                      </PostCard>
-                    </li>
-                  ) : (
-                    <SortableItem
-                      key={p.id}
-                      post={p}
-                      index={unpinned.findIndex((u) => u.id === p.id)}
-                      total={unpinned.length}
-                      onMove={move}
-                      onDelete={remove}
-                    />
-                  ),
-                )}
-              </ul>
-            </SortableContext>
-          </DndContext>
-        )
-      )}
+          <>
+            {unpinned.length > 1 && (
+              <p className="text-sm text-muted-foreground">
+                Drag a card, or focus it and press Space then the arrow keys, to reorder the queue.
+              </p>
+            )}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={unpinned.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+                <ul className="flex flex-col gap-3">
+                  {upcoming.map((p) =>
+                    p.pinned ? (
+                      <li key={p.id}>
+                        <PostCard post={p} actions={<CardActions post={p} onDelete={remove} />} />
+                      </li>
+                    ) : (
+                      <SortableItem key={p.id} post={p} onDelete={remove} />
+                    ),
+                  )}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          </>
+        ))}
 
       {tab === 'drafts' && (
         <ul className="flex flex-col gap-3">
           {drafts.map((p) => (
             <li key={p.id}>
-              <PostCard post={p}>
-                <Button type="button" variant="ghost" asChild>
-                  <Link to={`/compose?edit=${p.id}`}>Edit</Link>
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => remove(p.id)}>
-                  Delete
-                </Button>
-              </PostCard>
+              <PostCard post={p} actions={<CardActions post={p} onDelete={remove} />} />
             </li>
           ))}
           {drafts.length === 0 && <p className="text-muted-foreground">No drafts.</p>}
