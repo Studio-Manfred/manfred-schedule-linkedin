@@ -38,6 +38,23 @@ Format:
   ship-with-the-stack gotcha for any Vite-SPA-plus-`api/`-functions project on Vercel.
 - **Graduated to:** applies to every project using this SPA + serverless-functions shape.
 
+## 2026-07-20 — SPA catch-all rewrite shadows dynamic API routes (405 on PATCH/DELETE)
+
+- **Symptom:** static API routes work (`GET/POST /api/posts`, `/api/slots`, `/api/auth/*`),
+  but `PATCH`/`DELETE /api/posts/:id` and `POST /api/posts/:id/retry` return **405** with an
+  empty (non-JSON) body. In the UI: "request failed (405)" when editing, pinning, deleting, or
+  retrying. Tell-tale: `GET /api/posts/<anything>` returns **200 (SPA HTML)** instead of the
+  handler's own response.
+- **Cause:** `vercel.json` had `"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]`.
+  Vercel resolves **static** function routes in the filesystem phase (before rewrites) but
+  **dynamic** routes (`/api/posts/[id]`) *after* rewrites — so the catch-all grabbed
+  `/api/posts/<uuid>` and served `index.html` (a static asset that only allows GET/HEAD → 405
+  for PATCH/DELETE). Only dynamic routes were affected, which is why create/list worked.
+- **Fix / conclusion:** exclude `/api/` from the SPA fallback with a negative lookahead:
+  `"source": "/((?!api/).*)"`. Any Vite-SPA-plus-`api/`-functions project on Vercel needs this;
+  the naive `/(.*)` catch-all silently breaks every dynamic API route.
+- **Graduated to:** ship-with-the-stack gotcha for SPA + `api/` functions on Vercel.
+
 ## Seeded stack gotchas (ship with the starter — not incidents in this repo)
 
 These were hit downstream (manfred-workshops, 2026-07-13) and will recur in any project
