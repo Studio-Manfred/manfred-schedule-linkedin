@@ -5,8 +5,9 @@ posts, drops them into a recurring queue (e.g. Tue/Thu 08:30 Europe/Stockholm) o
 them to an exact time, and the app auto-publishes to his LinkedIn profile with no laptop
 open. Posts are written elsewhere (Claude skills) — this app only schedules and publishes.
 
-> **Status:** built and tested (backend, 5 frontend screens, E2E + accessibility). Not
-> yet deployed — first production deploy is a pending follow-up. See `changelog.md`.
+> **Status:** **live in production** at https://manfred-schedule-linkedin.vercel.app —
+> backend, 5 frontend screens, Monthly View calendar, first-comment, E2E + accessibility.
+> See `changelog.md` for the release history.
 
 ## Architecture
 

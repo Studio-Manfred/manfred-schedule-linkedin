@@ -3,6 +3,46 @@
 Session log. Newest first. One entry per working session; record what shipped, what is
 half-done, and the next pickup point. Convert relative dates to absolute.
 
+## 2026-07-20 — live in prod · feature wave STU-669..672 (v0.2.0)
+
+- **Status: LIVE in production** at https://manfred-schedule-linkedin.vercel.app. The
+  "not yet deployed" warning in the older entry below is superseded — provisioning +
+  first deploy happened, and a real post published to LinkedIn.
+- **Shipped this session (four PRs, each ticket → branch → TDD → CI → squash-merge →
+  Vercel prod deploy):**
+  - **STU-669 — first comment.** Optional per-post `firstComment` (DB column
+    `first_comment`, migration `002`), sent to Zernio as
+    `platforms[0].platformSpecificData.firstComment`, omitted when blank, ≤1250 chars.
+    Point of it: LinkedIn suppresses in-body links ~40–50%, so links go in an
+    auto-posted first comment ("see comments for links"). Ran `npm run migrate` against
+    prod Neon before merge.
+  - **STU-670 — Monthly View.** Third Queue tab: a month calendar (Monday-first,
+    Europe/Stockholm) of every dated post. Pure `src/lib/calendar.ts`
+    (`buildMonthGrid` / `stockholmDayKey` / `stockholmTime` / `rescheduleIso`) +
+    presentational `src/components/MonthCalendar.tsx` (dnd-kit). Click chip → edit /
+    open-on-LinkedIn; click ＋ future day → composer `?pin=YYYY-MM-DD`; drag
+    queued/failed/missed chip → pin to new day keeping its time-of-day. Client-side over
+    already-loaded posts, no new API.
+  - **STU-671 — drag feedback.** Grab/grabbing cursor, dnd-kit `DragOverlay` floating
+    preview, dimmed source, highlighted target cell.
+  - **STU-672 — delete dialog.** Replaced `window.confirm` with the DS `Dialog`
+    (`Button variant="destructive"`), one controlled dialog driven by `pendingDelete`.
+- **Decisions:** drag a11y is pointer-only by design — the non-drag alternative
+  (WCAG 2.2 SC 2.5.7) is click-chip → composer → edit-date; no brittle 2D-grid keyboard
+  drag. All calendar touch targets ≥24px (SC 2.5.8, caught by the axe sweep). Kept
+  everything client-side over the existing pin API — no new endpoints or deps.
+- **Gotchas hit (see knowledge/ERRORS.md):** first PR from this repo 403'd in CI on the
+  DS package until Actions-access was granted; skipping `npm run coverage:check` locally
+  let a branch-coverage dip reach CI (always run it before pushing); Playwright reuses an
+  existing preview server (`reuseExistingServer`) so kill stale ones before a throwaway;
+  `getByRole('button', {name:/delete/i})` matched a card whose body contained "delete" —
+  use `{name:'Delete', exact:true}`.
+- **Next pickup:** open follow-ups from the specs' non-goals — Monthly View **Week toggle**
+  and **per-day detail popover**; optionally show post body text on calendar chips (today
+  they show time + status dot only). Older known follow-ups (App.tsx unit test, ARIA
+  tabs `aria-controls`, DB `time_local` CHECK, non-transactional multi-row writes) still
+  stand.
+
 ## 2026-07-20 — v1 build · docs + memory (Task 18) · built & tested, deploy pending
 
 - **Shipped:** the full v1 build per
