@@ -63,6 +63,16 @@ describe('ComposerScreen', () => {
     )
   })
 
+  it('pre-fills the pin date from a ?pin= query param', async () => {
+    render(
+      <MemoryRouter initialEntries={['/compose?pin=2026-09-18']}>
+        <ComposerScreen />
+      </MemoryRouter>,
+    )
+    const pin = await screen.findByLabelText(/pin to a specific date/i)
+    expect(pin).toHaveValue('2026-09-18T09:00')
+  })
+
   it('disables Add to queue when no slots are configured', async () => {
     vi.mocked(api.getSlots).mockResolvedValue([])
     renderComposer()
