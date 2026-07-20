@@ -16,6 +16,10 @@
   missed post to another day to reschedule it (keeps its time of day, DST-correct). Client-
   side over already-loaded posts — no new API. (STU-670)
 
+### Changed
+- Queue: deleting a post now opens a design-system confirmation dialog (Cancel / Delete
+  post) instead of the browser's native `confirm`. (STU-672)
+
 ## 0.1.0 — 2026-07-20 (pending first production deploy)
 
 Initial build: single-user LinkedIn scheduler. Backend, all five frontend screens, and

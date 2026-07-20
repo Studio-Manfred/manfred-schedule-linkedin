@@ -130,6 +130,19 @@ test('Monthly View tab renders an accessible calendar', async ({ page }) => {
   await expectNoA11yViolations(page)
 })
 
+test('delete shows an accessible confirmation dialog', async ({ page }) => {
+  const state = await mockApi(page, [post('a', 'sample post')])
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Delete', exact: true }).first().click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await expectNoA11yViolations(page)
+  // Cancel dismisses without deleting.
+  await dialog.getByRole('button', { name: /cancel/i }).click()
+  await expect(dialog).toBeHidden()
+  expect(state.posts).toHaveLength(1)
+})
+
 for (const [name, path] of [
   ['queue', '/'],
   ['composer', '/compose'],
