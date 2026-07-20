@@ -125,9 +125,6 @@ export function ComposerScreen() {
       </div>
 
       <ImageAttach images={images} onChange={setImages} />
-      {altMissing && (
-        <p className="text-muted-foreground">Add alt text to every image before scheduling.</p>
-      )}
       {error && (
         <p role="alert" className="text-destructive">
           {error}
