@@ -40,22 +40,19 @@ export default function App() {
       </a>
       <header className="mb-8 flex items-center justify-between">
         <p className="font-semibold">Manfred Schedule</p>
-        <nav aria-label="Main">
-          <ul className="flex gap-4">
-            {NAV.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.to === '/'}
-                  className={({ isActive }) =>
-                    isActive ? 'font-semibold underline underline-offset-4' : 'hover:underline'
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+        <nav aria-label="Main" className="flex gap-4">
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              className={({ isActive }) =>
+                isActive ? 'font-semibold underline underline-offset-4' : 'hover:underline'
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
       </header>
       <main id="main">
