@@ -20,6 +20,24 @@ Format:
 
 ---
 
+## 2026-07-20 — Vercel serverless functions crash with ERR_MODULE_NOT_FOUND
+
+- **Symptom:** SPA loads (200) but every `/api/*` function returns 500
+  `FUNCTION_INVOCATION_FAILED`. Runtime log: `Error [ERR_MODULE_NOT_FOUND]: Cannot find
+  module '/var/task/api/_lib/http' imported from /var/task/api/cron/publish.js`. All local
+  gates (tsc, vitest, Vite build, ESLint, Playwright) were green.
+- **Cause:** `package.json` has `"type": "module"`, so Vercel emits the functions as ESM.
+  Node's ESM loader requires **explicit file extensions** on relative imports, but the code
+  used extensionless imports (`from '../_lib/http'`). Every local tool resolves these because
+  all tsconfigs use `moduleResolution: "bundler"` and Vite/vitest use esbuild — so the bug is
+  invisible until it runs on Vercel's plain Node ESM runtime, which does not bundle these
+  shared `api/_lib/*` files.
+- **Fix / conclusion:** add `.js` extensions to every relative import in the files Vercel runs
+  (`api/**/*.ts` non-test + the `src/lib/*` modules they import). `.js` specifiers resolve
+  correctly under `bundler` resolution too, so tsc/vitest/Vite stay green. This is a
+  ship-with-the-stack gotcha for any Vite-SPA-plus-`api/`-functions project on Vercel.
+- **Graduated to:** applies to every project using this SPA + serverless-functions shape.
+
 ## Seeded stack gotchas (ship with the starter — not incidents in this repo)
 
 These were hit downstream (manfred-workshops, 2026-07-13) and will recur in any project
