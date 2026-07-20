@@ -122,6 +122,14 @@ test('pin flow sends scheduledAt', async ({ page }) => {
   expect(state.posts.some((p) => p.pinned)).toBe(true)
 })
 
+test('Monthly View tab renders an accessible calendar', async ({ page }) => {
+  await mockApi(page, [post('a', 'sample post')])
+  await page.goto('/')
+  await page.getByRole('tab', { name: /monthly view/i }).click()
+  await expect(page.getByRole('columnheader')).toHaveCount(7)
+  await expectNoA11yViolations(page)
+})
+
 for (const [name, path] of [
   ['queue', '/'],
   ['composer', '/compose'],

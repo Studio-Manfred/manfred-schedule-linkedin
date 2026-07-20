@@ -8,7 +8,10 @@ import type { Post } from '@/lib/types'
 
 vi.mock('@/api/client', async (importOriginal) => {
   const mod = await importOriginal<typeof import('@/api/client')>()
-  return { ...mod, api: { ...mod.api, listPosts: vi.fn(), reorder: vi.fn(), deletePost: vi.fn() } }
+  return {
+    ...mod,
+    api: { ...mod.api, listPosts: vi.fn(), reorder: vi.fn(), deletePost: vi.fn(), updatePost: vi.fn() },
+  }
 })
 
 const queued = (id: string, position: number, extra: Partial<Post> = {}): Post => ({
@@ -60,5 +63,27 @@ describe('QueueScreen', () => {
     await screen.findByText(/post a/)
     await userEvent.click(screen.getByRole('tab', { name: /drafts/i }))
     expect(screen.getByText(/post d/)).toBeInTheDocument()
+  })
+
+  it('shows a Monthly View tab that renders the calendar', async () => {
+    render(<MemoryRouter><QueueScreen /></MemoryRouter>)
+    await userEvent.click(await screen.findByRole('tab', { name: /monthly view/i }))
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7)
+  })
+
+  it('opens a published post on LinkedIn from the calendar', async () => {
+    const today = new Date()
+    const noonToday = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12, 0),
+    ).toISOString()
+    vi.mocked(api.listPosts).mockResolvedValue([
+      queued('pub', 0, { status: 'published', scheduledAt: noonToday, linkedinUrl: 'https://li/x' }),
+    ])
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    render(<MemoryRouter><QueueScreen /></MemoryRouter>)
+    await userEvent.click(await screen.findByRole('tab', { name: /monthly view/i }))
+    await userEvent.click(screen.getByRole('button', { name: /open published post/i }))
+    expect(open).toHaveBeenCalledWith('https://li/x', '_blank', 'noopener,noreferrer')
+    open.mockRestore()
   })
 })

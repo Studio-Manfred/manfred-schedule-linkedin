@@ -117,6 +117,12 @@ see `docs/superpowers/specs/2026-07-20-linkedin-scheduler-design.md`, Prerequisi
   immediately after publishing (`platformSpecificData.firstComment`). Put external links
   here — LinkedIn suppresses posts with links in the body by ~40–50%. Blank means no
   comment; the field is capped at 1,250 characters.
+- **Monthly View:** the Queue screen has a month-calendar tab (Monday-first, Europe/
+  Stockholm) showing every dated post. Click a chip to edit it (published posts open on
+  LinkedIn); click ＋ on a future day to compose a post pinned there; drag a queued/failed/
+  missed post to another day to reschedule it (keeps its time of day). Keyboard/AT users
+  reschedule via the chip → composer → edit-date path (WCAG 2.2 SC 2.5.7). It reads the
+  posts already loaded on the Queue screen — no extra API calls.
 
 ## Where the way-of-working lives
 

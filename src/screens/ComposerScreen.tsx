@@ -64,6 +64,12 @@ export function ComposerScreen() {
     })
   }, [editId])
 
+  // Pre-fill the pin datetime when arriving from the calendar's "add on this day".
+  useEffect(() => {
+    const pin = params.get('pin')
+    if (!editId && pin && /^\d{4}-\d{2}-\d{2}$/.test(pin)) setPinAt(`${pin}T09:00`)
+  }, [params, editId])
+
   const nextSlot = useMemo(() => {
     const queued = posts
       .filter((p) => p.status === 'queued' && !p.pinned && p.id !== editId)
