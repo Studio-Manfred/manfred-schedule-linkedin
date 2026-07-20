@@ -1,0 +1,4 @@
+export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
+  void onLogout
+  return <h1 className="text-xl font-semibold">Settings</h1>
+}
