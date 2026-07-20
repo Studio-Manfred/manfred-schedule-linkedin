@@ -49,7 +49,7 @@ export function ImageAttach({ images, onChange }: Props) {
           <li key={img.url} className="flex items-start gap-3">
             <img src={img.url} alt="" className="h-16 w-16 rounded object-cover" />
             <label className="flex grow flex-col gap-1">
-              <span>Alt text (describe the image)</span>
+              <span>{`Alt text for image ${i + 1} (describe the image)`}</span>
               <input
                 type="text"
                 value={img.alt}

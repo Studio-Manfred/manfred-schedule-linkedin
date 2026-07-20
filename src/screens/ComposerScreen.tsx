@@ -37,6 +37,14 @@ export function ComposerScreen() {
         if (post) {
           setBody(post.body)
           setImages(post.images)
+          if (post.pinned && post.scheduledAt) {
+            const parts = new Intl.DateTimeFormat('sv-SE', {
+              timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', hour12: false,
+            }).formatToParts(new Date(post.scheduledAt))
+            const p = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
+            setPinAt(`${p('year')}-${p('month')}-${p('day')}T${p('hour')}:${p('minute')}`)
+          }
         }
       }
     })
@@ -45,7 +53,7 @@ export function ComposerScreen() {
   const nextSlot = useMemo(() => {
     const queued = posts.filter((p) => p.status === 'queued' && !p.pinned && p.id !== editId).map((p) => p.id)
     const pinnedTimes = posts
-      .filter((p) => p.status === 'queued' && p.pinned && p.scheduledAt)
+      .filter((p) => p.status === 'queued' && p.pinned && p.scheduledAt && p.id !== editId)
       .map((p) => new Date(p.scheduledAt!))
     const dealt = dealSchedule({ slots, queuedIds: [...queued, 'new'], pinnedTimes, now: new Date() })
     return dealt.get('new') ?? null
