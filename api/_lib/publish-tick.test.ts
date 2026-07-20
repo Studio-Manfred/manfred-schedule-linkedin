@@ -7,7 +7,7 @@ const NOW = new Date('2026-07-21T06:31:00Z')
 
 function post(overrides: Partial<Post>): Post {
   return {
-    id: 'p1', body: 'hi', images: [], status: 'publishing', pinned: false, position: 0,
+    id: 'p1', body: 'hi', images: [], firstComment: null, status: 'publishing', pinned: false, position: 0,
     scheduledAt: '2026-07-21T06:30:00.000Z', zernioPostId: null, linkedinUrl: null,
     error: null, attempts: 1, createdAt: '', updatedAt: '', ...overrides,
   }
@@ -35,9 +35,24 @@ describe('runPublishTick', () => {
   it('publishes a due post and records the result', async () => {
     const { deps, publisher } = makeDeps([post({})], { ok: true, zernioPostId: 'z1', linkedinUrl: 'https://li/x' })
     const result = await runPublishTick(deps)
-    expect(publisher.publish).toHaveBeenCalledWith({ requestId: 'p1', body: 'hi', images: [] })
+    expect(publisher.publish).toHaveBeenCalledWith({ requestId: 'p1', body: 'hi', images: [], firstComment: null })
     expect(deps.markPublished).toHaveBeenCalledWith('p1', 'z1', 'https://li/x')
     expect(result.published).toBe(1)
+  })
+
+  it('forwards a post first comment to the publisher', async () => {
+    const { deps, publisher } = makeDeps([post({ firstComment: 'Link: https://x.dev' })], {
+      ok: true,
+      zernioPostId: 'z2',
+      linkedinUrl: null,
+    })
+    await runPublishTick(deps)
+    expect(publisher.publish).toHaveBeenCalledWith({
+      requestId: 'p1',
+      body: 'hi',
+      images: [],
+      firstComment: 'Link: https://x.dev',
+    })
   })
 
   it('marks a post >60 min late as missed without publishing', async () => {

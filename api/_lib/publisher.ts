@@ -2,6 +2,8 @@ export interface PublishInput {
   requestId: string
   body: string
   images: { url: string; alt: string; contentType: string }[]
+  /** Auto-posted as the first comment after publish (e.g. external links). */
+  firstComment?: string | null
 }
 
 export type PublishResult =
@@ -57,6 +59,12 @@ export class ZernioPublisher implements Publisher {
       for (const img of input.images) {
         mediaItems.push({ url: await this.uploadImage(img), type: 'image', altText: img.alt })
       }
+      const firstComment = input.firstComment?.trim()
+      const linkedin = {
+        platform: 'linkedin',
+        accountId: this.opts.accountId,
+        ...(firstComment ? { platformSpecificData: { firstComment: input.firstComment } } : {}),
+      }
       const res = await this.fetch(`${this.base}/posts`, {
         method: 'POST',
         headers: this.headers({ 'x-request-id': input.requestId }),
@@ -64,7 +72,7 @@ export class ZernioPublisher implements Publisher {
           content: input.body,
           ...(mediaItems.length > 0 ? { mediaItems } : {}),
           publishNow: true,
-          platforms: [{ platform: 'linkedin', accountId: this.opts.accountId }],
+          platforms: [linkedin],
         }),
       })
       const data = (await res.json().catch(() => ({}))) as Record<string, unknown>

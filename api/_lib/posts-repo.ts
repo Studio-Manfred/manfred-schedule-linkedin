@@ -4,6 +4,7 @@ import { sql } from './db.js'
 export interface NewPost {
   body: string
   images: PostImage[]
+  firstComment: string | null
   status: 'draft' | 'queued'
   pinned: boolean
   position: number | null
@@ -13,6 +14,7 @@ export interface NewPost {
 export interface PostPatch {
   body: string
   images: PostImage[]
+  firstComment: string | null
   status: PostStatus
   pinned: boolean
   position: number | null
@@ -27,6 +29,7 @@ function rowToPost(r: any): Post {
     id: r.id,
     body: r.body,
     images: r.images as PostImage[],
+    firstComment: r.first_comment ?? null,
     status: r.status as PostStatus,
     pinned: r.pinned,
     position: r.position,
@@ -54,8 +57,8 @@ export async function getPost(id: string): Promise<Post | null> {
 
 export async function insertPost(p: NewPost): Promise<Post> {
   const rows = (await sql()`
-    INSERT INTO posts (body, images, status, pinned, position, scheduled_at)
-    VALUES (${p.body}, ${JSON.stringify(p.images)}::jsonb, ${p.status}, ${p.pinned}, ${p.position}, ${p.scheduledAt})
+    INSERT INTO posts (body, images, first_comment, status, pinned, position, scheduled_at)
+    VALUES (${p.body}, ${JSON.stringify(p.images)}::jsonb, ${p.firstComment}, ${p.status}, ${p.pinned}, ${p.position}, ${p.scheduledAt})
     RETURNING *`) as any[]
   return rowToPost(rows[0])
 }
@@ -66,6 +69,7 @@ export async function updatePost(id: string, patch: Partial<PostPatch>): Promise
   const next = {
     body: patch.body ?? cur.body,
     images: patch.images ?? cur.images,
+    firstComment: patch.firstComment !== undefined ? patch.firstComment : cur.firstComment,
     status: patch.status ?? cur.status,
     pinned: patch.pinned ?? cur.pinned,
     position: patch.position !== undefined ? patch.position : cur.position,
@@ -80,6 +84,7 @@ export async function updatePost(id: string, patch: Partial<PostPatch>): Promise
   }
   const rows = (await sql()`
     UPDATE posts SET body = ${next.body}, images = ${JSON.stringify(next.images)}::jsonb,
+      first_comment = ${next.firstComment},
       status = ${next.status}, pinned = ${next.pinned}, position = ${next.position},
       scheduled_at = ${next.scheduledAt}, attempts = ${next.attempts}, error = ${next.error},
       updated_at = now()

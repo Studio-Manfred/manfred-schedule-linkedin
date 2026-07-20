@@ -12,7 +12,7 @@ vi.mock('@/api/client', async (importOriginal) => {
 })
 
 const queued = (id: string, position: number, extra: Partial<Post> = {}): Post => ({
-  id, body: `post ${id}`, images: [], status: 'queued', pinned: false, position,
+  id, body: `post ${id}`, images: [], firstComment: null, status: 'queued', pinned: false, position,
   scheduledAt: `2026-07-2${1 + position}T06:30:00.000Z`, zernioPostId: null, linkedinUrl: null,
   error: null, attempts: 0, createdAt: '', updatedAt: '', ...extra,
 })

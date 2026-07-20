@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Composer: optional **first comment**, auto-posted right after the post publishes. Sent to
+  Zernio as `platformSpecificData.firstComment` on the LinkedIn platform entry (omitted when
+  blank). Best used for external links — LinkedIn suppresses posts that carry links in the
+  body by ~40–50%, so the pattern is "…see the comments for links 👇" in the post with the
+  URL in the first comment. Persisted via a new nullable `first_comment` column
+  (migration `002_first_comment.sql`); capped at 1,250 characters (LinkedIn's comment
+  limit). (STU-669)
+
 ## 0.1.0 — 2026-07-20 (pending first production deploy)
 
 Initial build: single-user LinkedIn scheduler. Backend, all five frontend screens, and

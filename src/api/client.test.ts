@@ -13,6 +13,7 @@ const post: Post = {
   id: 'p1',
   body: 'hello',
   images: [],
+  firstComment: null,
   status: 'draft',
   pinned: false,
   position: null,

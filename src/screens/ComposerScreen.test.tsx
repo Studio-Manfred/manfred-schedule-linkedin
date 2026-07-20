@@ -52,6 +52,17 @@ describe('ComposerScreen', () => {
     )
   })
 
+  it('includes an optional first comment in the queued payload', async () => {
+    vi.mocked(api.createPost).mockResolvedValue({ id: 'p1' } as never)
+    renderComposer()
+    await userEvent.type(await screen.findByLabelText(/post text/i), 'see comments for links')
+    await userEvent.type(screen.getByLabelText(/first comment/i), 'Link: https://x.dev')
+    await userEvent.click(screen.getByRole('button', { name: /add to queue/i }))
+    expect(api.createPost).toHaveBeenCalledWith(
+      expect.objectContaining({ firstComment: 'Link: https://x.dev', action: 'queue' }),
+    )
+  })
+
   it('disables Add to queue when no slots are configured', async () => {
     vi.mocked(api.getSlots).mockResolvedValue([])
     renderComposer()
