@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Button, Card } from '@studio-manfred/manfred-design-system'
+import {
+  Button,
+  Card,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@studio-manfred/manfred-design-system'
 import { api } from '@/api/client'
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -63,25 +71,22 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
         ) : (
           <ul className="flex flex-col gap-2">
             {rows.map((row, i) => (
-              <li
-                key={i}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-3 py-2"
-              >
-                <label className="sr-only" htmlFor={`wd-${i}`}>
-                  Weekday for slot {i + 1}
-                </label>
-                <select
-                  id={`wd-${i}`}
-                  value={row.weekday}
-                  onChange={(e) => update(i, { weekday: Number(e.target.value) })}
-                  className="rounded-md border border-input bg-background px-3 py-2"
+              <li key={i} className="flex flex-wrap items-center gap-3">
+                <Select
+                  value={String(row.weekday)}
+                  onValueChange={(v) => update(i, { weekday: Number(v) })}
                 >
-                  {WEEKDAYS.map((d, wd) => (
-                    <option key={wd} value={wd}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger aria-label={`Weekday for slot ${i + 1}`} className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WEEKDAYS.map((d, wd) => (
+                      <SelectItem key={wd} value={String(wd)}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <label className="sr-only" htmlFor={`t-${i}`}>
                   Time for slot {i + 1}
                 </label>
