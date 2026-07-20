@@ -10,6 +10,9 @@ base at `my-process/docs/knowledge/`.
 <!-- What things are: product context, APIs, naming, team decisions. -->
 - [ui-patterns.md](ui-patterns.md) — seeded UI construction patterns (clickable cards,
   card footers with actions, DS icon-gap stopgap).
+- [zernio.md](zernio.md) — Zernio API domain notes: auth, `x-request-id` idempotency,
+  409 content-hash dedup, presign media flow, temp-storage caveat. Full reference
+  vendored at `docs/llms-full.txt`.
 
 ### Procedural
 <!-- How to do things: deploy steps, test commands, review flows. -->
