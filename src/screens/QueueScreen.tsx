@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   DndContext,
   KeyboardSensor,
@@ -18,9 +18,11 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Badge, Button } from '@studio-manfred/manfred-design-system'
-import { api } from '@/api/client'
+import { api, ApiError } from '@/api/client'
+import { MonthCalendar } from '@/components/MonthCalendar'
 import { PostCard } from '@/components/PostCard'
-import type { Post } from '@/lib/types'
+import { rescheduleIso } from '@/lib/calendar'
+import { TIMEZONE, type Post } from '@/lib/types'
 
 function CardActions({ post, onDelete }: { post: Post; onDelete: (id: string) => void }) {
   return (
@@ -54,7 +56,9 @@ function SortableItem({ post, onDelete }: { post: Post; onDelete: (id: string) =
 
 export function QueueScreen() {
   const [posts, setPosts] = useState<Post[]>([])
-  const [tab, setTab] = useState<'queue' | 'drafts'>('queue')
+  const [tab, setTab] = useState<'queue' | 'drafts' | 'month'>('queue')
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -92,6 +96,25 @@ export function QueueScreen() {
     void load()
   }
 
+  function openPost(post: Post) {
+    if (post.status === 'published') {
+      if (post.linkedinUrl) window.open(post.linkedinUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+    navigate(`/compose?edit=${post.id}`)
+  }
+
+  async function reschedule(post: Post, dayKey: string) {
+    setError(null)
+    try {
+      await api.updatePost(post.id, { action: 'pin', scheduledAt: rescheduleIso(post, dayKey, TIMEZONE) })
+      await load()
+    } catch (e) {
+      await load() // snap the chip back to its real slot
+      setError(e instanceof ApiError ? e.message : 'could not reschedule')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -102,7 +125,7 @@ export function QueueScreen() {
       </div>
 
       <div role="tablist" aria-label="Queue sections" className="flex gap-2 border-b border-border">
-        {(['queue', 'drafts'] as const).map((t) => (
+        {(['queue', 'drafts', 'month'] as const).map((t) => (
           <button
             key={t}
             role="tab"
@@ -114,10 +137,12 @@ export function QueueScreen() {
                 : 'flex items-center gap-2 px-3 py-2'
             }
           >
-            {t === 'queue' ? 'Upcoming' : 'Drafts'}
-            <Badge variant="neutral" size="sm">
-              {t === 'queue' ? upcoming.length : drafts.length}
-            </Badge>
+            {t === 'queue' ? 'Upcoming' : t === 'drafts' ? 'Drafts' : 'Monthly View'}
+            {t !== 'month' && (
+              <Badge variant="neutral" size="sm">
+                {t === 'queue' ? upcoming.length : drafts.length}
+              </Badge>
+            )}
           </button>
         ))}
       </div>
@@ -165,6 +190,22 @@ export function QueueScreen() {
           ))}
           {drafts.length === 0 && <p className="text-muted-foreground">No drafts.</p>}
         </ul>
+      )}
+
+      {tab === 'month' && (
+        <>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <MonthCalendar
+            posts={posts}
+            onSelectPost={openPost}
+            onSelectDay={(dayKey) => navigate(`/compose?pin=${dayKey}`)}
+            onReschedule={reschedule}
+          />
+        </>
       )}
     </div>
   )
