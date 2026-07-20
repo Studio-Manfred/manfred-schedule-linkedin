@@ -10,6 +10,11 @@
   URL in the first comment. Persisted via a new nullable `first_comment` column
   (migration `002_first_comment.sql`); capped at 1,250 characters (LinkedIn's comment
   limit). (STU-669)
+- Queue: a **Monthly View** tab — a Buffer-style month calendar (Monday-first, Europe/
+  Stockholm) of every dated post. Click a chip to edit it (or open a published post on
+  LinkedIn); click ＋ on a future day to compose pinned there; **drag** a queued/failed/
+  missed post to another day to reschedule it (keeps its time of day, DST-correct). Client-
+  side over already-loaded posts — no new API. (STU-670)
 
 ## 0.1.0 — 2026-07-20 (pending first production deploy)
 

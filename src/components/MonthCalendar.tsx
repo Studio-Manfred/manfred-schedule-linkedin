@@ -61,7 +61,7 @@ function Chip({
       {...(draggable ? { ...attributes, ...listeners, 'aria-roledescription': 'draggable' } : {})}
       onClick={() => onSelectPost(post)}
       aria-label={`${verb} ${time}: ${post.body.slice(0, 40)}`}
-      className={`flex w-full items-center gap-1 rounded border border-border px-1 py-0.5 text-left text-xs ${
+      className={`flex min-h-6 w-full items-center gap-1 rounded border border-border px-1 py-0.5 text-left text-xs ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
@@ -115,7 +115,7 @@ function Cell({
             type="button"
             onClick={() => onSelectDay(cell.dayKey)}
             aria-label={`Add a post on ${cell.dayOfMonth} ${monthLabel}`}
-            className="rounded px-1 text-xs text-muted-foreground hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded text-sm text-muted-foreground hover:text-foreground"
           >
             ＋
           </button>
@@ -175,7 +175,7 @@ export function MonthCalendar({
           type="button"
           onClick={() => step(-1)}
           aria-label="Previous month"
-          className="rounded border border-border px-2 py-1"
+          className="inline-flex min-h-8 items-center justify-center rounded border border-border px-3"
         >
           ‹
         </button>
@@ -183,7 +183,7 @@ export function MonthCalendar({
           type="button"
           onClick={() => setYm({ year: baseYear, month: baseMonth })}
           aria-label="Today"
-          className="rounded border border-border px-2 py-1"
+          className="inline-flex min-h-8 items-center justify-center rounded border border-border px-3"
         >
           Today
         </button>
@@ -191,7 +191,7 @@ export function MonthCalendar({
           type="button"
           onClick={() => step(1)}
           aria-label="Next month"
-          className="rounded border border-border px-2 py-1"
+          className="inline-flex min-h-8 items-center justify-center rounded border border-border px-3"
         >
           ›
         </button>
