@@ -17,6 +17,10 @@
   side over already-loaded posts — no new API. (STU-670) Dragging shows a grab cursor and a
   floating preview of the post, dims the source, and highlights the target day. (STU-671)
 
+### Changed
+- Queue: deleting a post now opens a design-system confirmation dialog (Cancel / Delete
+  post) instead of the browser's native `confirm`. (STU-672)
+
 ## 0.1.0 — 2026-07-20 (pending first production deploy)
 
 Initial build: single-user LinkedIn scheduler. Backend, all five frontend screens, and

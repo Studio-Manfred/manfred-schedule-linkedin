@@ -17,7 +17,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Badge, Button } from '@studio-manfred/manfred-design-system'
+import {
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@studio-manfred/manfred-design-system'
 import { api, ApiError } from '@/api/client'
 import { MonthCalendar } from '@/components/MonthCalendar'
 import { PostCard } from '@/components/PostCard'
@@ -58,6 +67,7 @@ export function QueueScreen() {
   const [posts, setPosts] = useState<Post[]>([])
   const [tab, setTab] = useState<'queue' | 'drafts' | 'month'>('queue')
   const [error, setError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const sensors = useSensors(
@@ -90,8 +100,14 @@ export function QueueScreen() {
     void persistOrder(arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))))
   }
 
-  async function remove(id: string) {
-    if (!window.confirm('Delete this post?')) return
+  function remove(id: string) {
+    setPendingDelete(id)
+  }
+
+  async function confirmDelete() {
+    const id = pendingDelete
+    setPendingDelete(null)
+    if (!id) return
     await api.deletePost(id)
     void load()
   }
@@ -207,6 +223,23 @@ export function QueueScreen() {
           />
         </>
       )}
+
+      <Dialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>Delete this post?</DialogTitle>
+            <DialogDescription>This permanently removes the post. This can’t be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete}>
+              Delete post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

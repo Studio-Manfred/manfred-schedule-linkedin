@@ -49,13 +49,24 @@ describe('QueueScreen', () => {
     expect(screen.queryByRole('button', { name: /move up|move down/i })).toBeNull()
   })
 
-  it('deletes a post via the Delete action', async () => {
+  it('deletes a post only after confirming in the dialog', async () => {
     vi.mocked(api.deletePost).mockResolvedValue()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<MemoryRouter><QueueScreen /></MemoryRouter>)
     const first = (await screen.findAllByRole('listitem'))[0]!
     await userEvent.click(within(first).getByRole('button', { name: /delete/i }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /delete post/i }))
     expect(api.deletePost).toHaveBeenCalledWith('a')
+  })
+
+  it('does not delete when the confirm dialog is canceled', async () => {
+    vi.mocked(api.deletePost).mockResolvedValue()
+    render(<MemoryRouter><QueueScreen /></MemoryRouter>)
+    const first = (await screen.findAllByRole('listitem'))[0]!
+    await userEvent.click(within(first).getByRole('button', { name: /delete/i }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /cancel/i }))
+    expect(api.deletePost).not.toHaveBeenCalled()
   })
 
   it('shows drafts under the Drafts tab', async () => {
