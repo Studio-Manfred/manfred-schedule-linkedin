@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MonthCalendar, type MonthCalendarProps } from './MonthCalendar'
+import { DragOverlayChip, MonthCalendar, type MonthCalendarProps } from './MonthCalendar'
 import type { Post } from '@/lib/types'
 
 const NOW = new Date('2026-07-15T09:00:00.000Z')
@@ -87,5 +87,23 @@ describe('MonthCalendar', () => {
     const pub = screen.getByRole('button', { name: /08:00.*body pub/i })
     expect(q).toHaveAttribute('aria-roledescription', 'draggable')
     expect(pub).not.toHaveAttribute('aria-roledescription', 'draggable')
+  })
+})
+
+describe('DragOverlayChip', () => {
+  it('shows the time and a body preview', () => {
+    render(
+      <DragOverlayChip
+        post={post('p', '2026-07-16T06:00:00.000Z', { body: 'Launch announcement' })}
+        timeZone="Europe/Stockholm"
+      />,
+    )
+    expect(screen.getByText('08:00')).toBeInTheDocument()
+    expect(screen.getByText(/launch announcement/i)).toBeInTheDocument()
+  })
+
+  it('renders without a time when the post has no scheduledAt', () => {
+    render(<DragOverlayChip post={post('p', null, { body: 'No date' })} timeZone="Europe/Stockholm" />)
+    expect(screen.getByText(/no date/i)).toBeInTheDocument()
   })
 })

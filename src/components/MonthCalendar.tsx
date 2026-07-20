@@ -78,7 +78,7 @@ function Chip({
 }
 
 /** Non-interactive copy shown floating under the pointer while dragging. */
-function DragOverlayChip({ post, timeZone }: { post: Post; timeZone: string }) {
+export function DragOverlayChip({ post, timeZone }: { post: Post; timeZone: string }) {
   const time = post.scheduledAt ? stockholmTime(post.scheduledAt, timeZone) : ''
   return (
     <div className="flex max-w-[12rem] cursor-grabbing items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs shadow-lg">
