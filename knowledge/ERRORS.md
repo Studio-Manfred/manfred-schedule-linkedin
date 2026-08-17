@@ -42,6 +42,29 @@ Format:
 - **Graduated to:** cross-project — any repo pairing a coverage ratchet with date-dependent code must
   freeze the test clock, or the gate flakes as time passes.
 
+## 2026-08-18 — Neon Free compute quota (100 CU-hrs) exhausted on ~zero traffic
+
+- **Symptom:** Neon reported compute usage `100.16 / 100 CU-hrs` mid-month despite the app
+  being essentially unused. Neon Free meters **compute-hours** (time the compute is awake),
+  not requests/rows — a 0.25 CU compute pinned awake 24/7 burns ~182.5 CU-hrs/month.
+- **Cause:** `vercel.json` ran the publish cron on `*/5 * * * *` (every 5 min). Neon
+  auto-suspends (scale-to-zero) only after **5 minutes idle**, and every cron tick issues two
+  Postgres **writes** (`sweepStuck` + `claimDuePosts` in `api/_lib/publish-tick.ts`, both
+  `UPDATE`s that run even when nothing is due — writes can't be cached and always wake the
+  compute). A 5-minute cadence against a 5-minute idle threshold means the compute never
+  reaches idle → ~100% uptime → quota blown by mid-month regardless of visitor count. The
+  Free plan's 5-minute scale-to-zero delay is **not** configurable (paid feature), so cron
+  cadence is the only lever.
+- **Fix / conclusion:** widen the cron interval. Lowered to `*/30 * * * *` (~30 CU-hrs/month),
+  which still publishes well inside the 60-minute `MISSED_WINDOW_MINUTES`. Rule of thumb on a
+  serverless/scale-to-zero DB: **nothing may touch the DB on a schedule more often than the
+  suspend threshold** (here 5 min) or the compute never sleeps. Diagnosis credit: the
+  query-pattern framing in hontran.dev/blog/neon-database-hitting-limit-low-traffic (its own
+  `unstable_cache`/Redis fixes are Next.js/Prisma-specific and don't apply to this Vite-SPA +
+  `api/` shape).
+- **Graduated to:** cross-project gotcha for any Vercel-cron + Neon-Free (or any scale-to-zero
+  DB) project — the cron interval must exceed the DB's auto-suspend delay.
+
 ## 2026-07-20 — Vercel serverless functions crash with ERR_MODULE_NOT_FOUND
 
 - **Symptom:** SPA loads (200) but every `/api/*` function returns 500

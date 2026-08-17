@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Fixed
+- Publish cron cadence lowered from every 5 min (`*/5 * * * *`) to every 30 min
+  (`*/30 * * * *`) in `vercel.json`. At 5-minute cadence every tick fired two Postgres
+  writes (`sweepStuck` + `claimDuePosts`), so Neon's compute never reached its 5-minute
+  scale-to-zero idle window and stayed awake ~24/7 — exhausting the Free plan's 100
+  CU-hours quota by mid-month on effectively zero traffic. Thirty minutes cuts compute to
+  ~30 CU-hrs/month and still publishes posts well inside the 60-minute
+  `MISSED_WINDOW_MINUTES`. (STU-686)
 - CI: the coverage ratchet no longer flakes with the calendar. The unit suite now freezes its
   clock (`test/setup.ts`, fixed to 2026-07-15, faking only `Date`) so branch coverage is
   deterministic run-to-run. Previously `MonthCalendar` and `ComposerScreen` fell back to the real
