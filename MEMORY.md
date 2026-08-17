@@ -3,6 +3,32 @@
 Session log. Newest first. One entry per working session; record what shipped, what is
 half-done, and the next pickup point. Convert relative dates to absolute.
 
+## 2026-08-18 — Neon Free compute quota exhausted → publish cron slowed to 30 min
+
+- **Trigger:** Neon reported `100.16 / 100 CU-hrs` mid-month on ~zero real traffic.
+- **Root cause (confirmed, not guessed):** the publish cron ran `*/5 * * * *` (every 5 min)
+  in `vercel.json`. Neon Free auto-suspends only after **5 min idle**, and every tick fires
+  two Postgres writes (`sweepStuck` + `claimDuePosts`, `api/_lib/publish-tick.ts`) that run
+  even when nothing is due — so the compute never reached idle and stayed awake ~24/7
+  (~182 CU-hrs/mo). No client-side polling exists; the cron was the sole scheduled DB-toucher.
+  Neon's HTTP driver (`neon()` in `api/_lib/db.ts`) is one-shot per query, so this is purely a
+  wake-from-query problem, not connection pooling. Free plan can't lower the 5-min suspend
+  delay (paid feature), so cron cadence is the only lever.
+- **Change made (local, uncommitted):** `vercel.json` cron `*/5` → `*/30 * * * *`
+  (~30 CU-hrs/mo, comfortably under quota; posts still publish inside the 60-min
+  `MISSED_WINDOW_MINUTES`). User chose 30 min over 15 (~60) / hourly (~15, too tight vs the
+  60-min window). Docs updated in the same change: `CHANGELOG.md` [Unreleased] › Fixed,
+  `knowledge/ERRORS.md` (new 2026-08-18 entry, graduated cross-project). The article the user
+  cited (hontran.dev) diagnosed the *cause* correctly but its `unstable_cache`/Upstash-Redis
+  fixes are Next.js/Prisma-specific and don't apply to this Vite-SPA + `api/` stack.
+- **Ticket:** STU-686 (High) — filed, In Progress. Branch `feat/STU-686-neon-cron-cadence`,
+  conventional commit `fix(cron): …`, PR opened with `Closes STU-686`.
+- **Next pickup:** **review + squash-merge the STU-686 PR**, which triggers the Vercel prod
+  deploy — the cron cadence only actually changes once the new `vercel.json` is live. Then
+  watch the Neon compute graph flip from flat-active to a sawtooth that drops to suspended
+  between ticks. This month's quota is already spent and resets next billing cycle — the DB
+  comes back on its own; the fix prevents recurrence.
+
 ## 2026-07-20 — live in prod · feature wave STU-669..672 (v0.2.0)
 
 - **Status: LIVE in production** at https://manfred-schedule-linkedin.vercel.app. The
