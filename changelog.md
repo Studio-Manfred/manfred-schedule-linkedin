@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- CI: the coverage ratchet no longer flakes with the calendar. The unit suite now freezes its
+  clock (`test/setup.ts`, fixed to 2026-07-15, faking only `Date`) so branch coverage is
+  deterministic run-to-run. Previously `MonthCalendar` and `ComposerScreen` fell back to the real
+  `new Date()`, so branch coverage drifted below the ratchet tolerance as months passed and failed
+  unrelated PRs. (STU-687)
+
 ## 0.2.0 — 2026-07-20
 
 ### Added
