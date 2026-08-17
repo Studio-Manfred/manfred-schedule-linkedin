@@ -20,6 +20,28 @@ Format:
 
 ---
 
+## 2026-08-18 — coverage ratchet fails on unrelated PRs (time-dependent branch coverage)
+
+- **Symptom:** `npm run coverage:check` failed CI on a **docs/config-only** PR — `branches 84.98%`
+  vs baseline `85.63%` (−0.65pp, over the 0.5pp tolerance) — with zero source or test changes.
+  Reproduced on `main`; meanwhile `statements`/`lines` had *risen* to 91.64% (the fingerprint of
+  nondeterministic, not regressed, coverage).
+- **Cause:** coverage was **time-dependent**. `src/components/MonthCalendar.tsx` (`now ?? new Date()`)
+  and `src/screens/ComposerScreen.tsx` (`dealSchedule({ now: new Date() })`) fall back to the real
+  clock, and the tests exercising them (`QueueScreen.test`, `ComposerScreen.test`) didn't pin it —
+  there was no global fake clock in `test/setup.ts`. The baseline was captured in July; as the wall
+  clock rolled into August the calendar's "current month" moved and past/future branches flipped,
+  drifting branch coverage below tolerance. An innocent PR (STU-686) took the blame.
+- **Fix / conclusion:** freeze the suite clock in `test/setup.ts` —
+  `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime('2026-07-15T09:00:00.000Z')` in
+  `beforeAll`, `vi.useRealTimers()` in `afterAll`. Fake **only** `Date` so real timers keep
+  user-event / Testing-Library async working (and keep their fake-timer detection off). Coverage is
+  now identical run-to-run and date-to-date (verified twice: branches 85.34%, within tolerance — no
+  baseline change needed). Rule: a coverage ratchet is only sound if the suite clock is frozen; any
+  `new Date()`/`Date.now()` in covered code makes the gate drift with the calendar. (STU-687)
+- **Graduated to:** cross-project — any repo pairing a coverage ratchet with date-dependent code must
+  freeze the test clock, or the gate flakes as time passes.
+
 ## 2026-07-20 — Vercel serverless functions crash with ERR_MODULE_NOT_FOUND
 
 - **Symptom:** SPA loads (200) but every `/api/*` function returns 500
