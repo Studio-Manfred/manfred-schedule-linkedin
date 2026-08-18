@@ -10,14 +10,14 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-18-multi-user-google-auth-design.md` (see §5 Auth, §9 PR1, §10 Testing, §11 Security).
 
-**Ticket:** File `STU-NNN` at execution start; branch `feat/STU-NNN-google-auth-pr1` off `main`.
+**Ticket:** STU-688; branch `feat/STU-688-google-auth-pr1`.
 
 ## Global Constraints
 
 - **ESM import extensions:** every relative import in `api/**` MUST end in `.js` (e.g. `from './session.js'`) — Vercel runs these as plain Node ESM; extensionless imports pass local tooling but 500 in prod (`knowledge/ERRORS.md`, 2026-07-20).
 - **Frozen test clock:** the suite freezes `Date` to `2026-07-15T09:00:00.000Z` (`test/setup.ts`, STU-687). Pass explicit `now`/timestamps in tests; never assert on real wall-clock.
 - **Coverage ratchet:** measured over `src/**` only (`vitest.config.ts` `coverage.include`), so `api/**` changes don't move it — but `src/**` changes (LoginScreen, client, App) do. Run `npm run test:coverage && npm run coverage:check` before every push; keep all four metrics within 0.5pp of `.coverage-baseline.json`.
-- **Conventional commits** naming the ticket: `feat(auth): … (STU-NNN)`.
+- **Conventional commits** naming the ticket: `feat(auth): … (STU-688)`.
 - **Accessibility:** the sign-in control is a real, keyboard-focusable, labeled element (`jsx-a11y` + axe sweep guard it).
 - **Secrets:** never log tokens, codes, client secret, or session values.
 
@@ -111,7 +111,7 @@ export function verifySession(
 
 - [ ] **Step 4: Run tests** — `npx vitest run api/_lib/session.test.ts` → PASS.
 
-- [ ] **Step 5: Commit** — `git add api/_lib/session.ts api/_lib/session.test.ts && git commit -m "feat(auth): session token carries userId (STU-NNN)"`
+- [ ] **Step 5: Commit** — `git add api/_lib/session.ts api/_lib/session.test.ts && git commit -m "feat(auth): session token carries userId (STU-688)"`
 
 ---
 
@@ -192,7 +192,7 @@ export async function getUserById(id: string): Promise<User | null> {
 
 - [ ] **Step 3: Typecheck** — `npm run typecheck:api` → clean.
 
-- [ ] **Step 4: Commit** — `git add migrations/003_users.sql api/_lib/users-repo.ts && git commit -m "feat(auth): users table + users-repo (STU-NNN)"`
+- [ ] **Step 4: Commit** — `git add migrations/003_users.sql api/_lib/users-repo.ts && git commit -m "feat(auth): users table + users-repo (STU-688)"`
 
 (The migration runs against Neon via `npm run migrate` during deploy — noted in Task 8.)
 
@@ -357,7 +357,7 @@ export async function exchangeCode(p: {
 
 - [ ] **Step 4: Run tests** — `npx vitest run api/_lib/google-oauth.test.ts` → PASS.
 
-- [ ] **Step 5: Commit** — `git add api/_lib/google-oauth.ts api/_lib/google-oauth.test.ts && git commit -m "feat(auth): google oauth helpers (STU-NNN)"`
+- [ ] **Step 5: Commit** — `git add api/_lib/google-oauth.ts api/_lib/google-oauth.test.ts && git commit -m "feat(auth): google oauth helpers (STU-688)"`
 
 ---
 
@@ -408,7 +408,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
 - [ ] **Step 3: Typecheck** — `npm run typecheck:api` → clean.
 
-- [ ] **Step 4: Commit** — `git add api/auth/google/start.ts api/_lib/http.ts && git commit -m "feat(auth): google oauth start route (STU-NNN)"`
+- [ ] **Step 4: Commit** — `git add api/auth/google/start.ts api/_lib/http.ts && git commit -m "feat(auth): google oauth start route (STU-688)"`
 
 ---
 
@@ -479,7 +479,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 - [ ] **Step 2: Typecheck** — `npm run typecheck:api` → clean.
 
-- [ ] **Step 3: Commit** — `git add api/auth/google/callback.ts && git commit -m "feat(auth): google oauth callback route (STU-NNN)"`
+- [ ] **Step 3: Commit** — `git add api/auth/google/callback.ts && git commit -m "feat(auth): google oauth callback route (STU-688)"`
 
 ---
 
@@ -544,7 +544,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 - [ ] **Step 4: Typecheck** — `npm run typecheck:api` → clean (confirm nothing else imports `checkPassword` or `login`).
 
-- [ ] **Step 5: Commit** — `git add -A api/_lib/http.ts api/auth/me.ts && git commit -m "feat(auth): requireUser + identity me, drop password login (STU-NNN)"`
+- [ ] **Step 5: Commit** — `git add -A api/_lib/http.ts api/auth/me.ts && git commit -m "feat(auth): requireUser + identity me, drop password login (STU-688)"`
 
 ---
 
@@ -619,7 +619,7 @@ Keep the existing routes; the "connect LinkedIn" nudge on `me.linkedinConnected 
 Run: `npm run test:run && npm run typecheck && npm run lint && npm run test:coverage && npm run coverage:check`
 Expected: all tests PASS (App.tsx has no unit test — it's covered by the E2E suite); typecheck/lint clean; ratchet PASS (all four metrics within 0.5pp — if a metric dips because the password branch is gone, add/adjust a `src/` test rather than lowering the baseline).
 
-- [ ] **Step 7: Commit** — `git add src/ && git commit -m "feat(auth): google sign-in on the frontend (STU-NNN)"`
+- [ ] **Step 7: Commit** — `git add src/ && git commit -m "feat(auth): google sign-in on the frontend (STU-688)"`
 
 ---
 
@@ -651,15 +651,15 @@ ALLOWED_EMAILS=
   5. Run the migration against prod Neon: `npm run migrate` (creates `users`, seeds jens).
 
 - [ ] **Step 3: Docs** — `README.md` auth section (Google sign-in, allowlist, env); `CHANGELOG.md` `[Unreleased] › Changed`:
-  `- Auth: replaced the shared password with Google sign-in; sessions now carry a user identity (foundation for per-user schedules). (STU-NNN)`
+  `- Auth: replaced the shared password with Google sign-in; sessions now carry a user identity (foundation for per-user schedules). (STU-688)`
 
-- [ ] **Step 4: Commit** — `git add -A && git commit -m "docs(auth): env + README + changelog for Google sign-in (STU-NNN)"`
+- [ ] **Step 4: Commit** — `git add -A && git commit -m "docs(auth): env + README + changelog for Google sign-in (STU-688)"`
 
 ---
 
 ## Delivery
 
-Open the PR (`Closes STU-NNN`), fill the template (Test plan: `npm run test:run`, `npm run typecheck`, `npm run lint`, `npm run coverage:check`, `npm run build`; note real Google OAuth is verified manually on the preview deploy since it can't be E2E'd). Merge when CI is green; run the migration + set env before/at deploy per Task 8. **Do not add david/moa's domains yet** — that's PR3.
+Open the PR (`Closes STU-688`), fill the template (Test plan: `npm run test:run`, `npm run typecheck`, `npm run lint`, `npm run coverage:check`, `npm run build`; note real Google OAuth is verified manually on the preview deploy since it can't be E2E'd). Merge when CI is green; run the migration + set env before/at deploy per Task 8. **Do not add david/moa's domains yet** — that's PR3.
 
 ## Self-review notes (author)
 
