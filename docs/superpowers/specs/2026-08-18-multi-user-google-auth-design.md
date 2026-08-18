@@ -1,6 +1,6 @@
 # Multi-user Google auth + per-user LinkedIn schedules — design
 
-**Status:** proposed (design approved in chat 2026-08-18; awaiting spec review)
+**Status:** approved (spec reviewed 2026-08-18; ready for implementation planning — PR1 first)
 **Author:** Jens Wedin + Claude
 **Related:** supersedes the single-user assumption in `2026-07-20-linkedin-scheduler-design.md`
 
@@ -20,9 +20,16 @@ own data," billing/subscriptions in-app, open public signup, company-page postin
 ## 2. Key decisions (approved)
 
 1. **Auth:** Google OAuth **replaces** the password entirely. No password fallback.
-2. **Signup gate:** email allowlist (env `ALLOWED_EMAILS`), seeded initially with **only
-   jens'** email; david and moa are added at the very end (see §9 sequencing) once
-   per-user LinkedIn publishing is live.
+2. **Signup gate:** **domain** allowlist (env `ALLOWED_DOMAINS`) — anyone with a verified
+   Google account at an allowed domain may sign up. Target domains:
+   `studiomanfred.com`, `seventyoneconsulting.se`, `matherstudio.se`. **Rollout safety:** the
+   env value is set to **`studiomanfred.com` only** through PR1–PR2, and the other two
+   domains are added in PR3 (see §9) once per-user data isolation *and* per-user publishing
+   are live — so david/moa can't log into an unscoped app. (During PR1 the repos are still
+   global, so in principle another `studiomanfred.com` account could see jens' data in that
+   short window; the org is effectively just jens, and PR2 closes it. If we want zero risk,
+   set an optional `ALLOWED_EMAILS` narrowing override to jens' exact email for PR1–PR2 and
+   drop it in PR3.)
 3. **LinkedIn per user:** **each user brings their own Zernio account.** They create a
    free Zernio account, connect their LinkedIn there, mint an API key, and paste it into
    our app. We publish each user's posts with **their** key + `accountId`. This keeps each
@@ -113,15 +120,19 @@ Notes:
 
 ### OAuth flow (authorization code + PKCE)
 - Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` (for the redirect URI),
-  `ALLOWED_EMAILS` (comma-separated), `CRED_ENC_KEY` (32-byte base64, see §6).
+  `ALLOWED_DOMAINS` (comma-separated email domains), `CRED_ENC_KEY` (32-byte base64,
+  see §6). Optional `ALLOWED_EMAILS` narrowing override (used only during the PR1–PR2
+  rollout window per §2).
 - `GET /api/auth/google/start` — generate `state` + PKCE `code_verifier`; store both in
   short-lived signed, HttpOnly cookies; 302 to Google's consent URL
   (`scope=openid email profile`).
 - `GET /api/auth/google/callback` — verify `state`; exchange `code` + `code_verifier` at
   Google's token endpoint; verify the `id_token` (issuer, audience = our client id,
-  expiry) and read `email`, `email_verified`, `sub`, `name`; **reject if email not in
-  `ALLOWED_EMAILS` or not verified**; upsert the `users` row by `google_sub` (fall back to
-  `email` on first login); set the session cookie with the user's id; 302 to `/`.
+  expiry) and read `email`, `email_verified`, `hd`, `sub`, `name`; **reject unless
+  `email_verified` is true AND the email's domain is in `ALLOWED_DOMAINS`** (use the `hd`
+  hosted-domain claim as corroboration when present; also reject if an `ALLOWED_EMAILS`
+  override is set and the email isn't in it); upsert the `users` row by `google_sub` (fall
+  back to `email` on first login); set the session cookie with the user's id; 302 to `/`.
 - Delete `api/auth/login.ts`; drop `APP_PASSWORD`. `logout.ts` unchanged.
 - `api/auth/me.ts` → returns `{ email, name, linkedinConnected: boolean }` (was 204) so the
   header can show who's signed in and whether they still need to connect LinkedIn.
@@ -194,8 +205,9 @@ david/moa while any tenant-scoping or per-user-publishing piece is unfinished.
 
 - **PR1 — Auth & identity foundation.** Migration `003` (users table + seed jens only —
   **no `posts`/`slots` changes yet**); session carries `userId`; `crypto.ts`; Google OAuth
-  start/callback; `ALLOWED_EMAILS` (jens only); `me` returns identity; LoginScreen → Google
-  button; remove password. Repos and publishing untouched — **safe because only jens
+  start/callback; `ALLOWED_DOMAINS` = `studiomanfred.com` only (optionally narrowed to
+  jens' email via `ALLOWED_EMAILS`); `me` returns identity; LoginScreen → Google button;
+  remove password. Repos and publishing untouched — **safe because only jens
   exists** and `posts`/`slots` are unchanged.
 - **PR2 — Tenant scoping.** Migration `004` (add `user_id`, backfill jens, NOT NULL) **in
   the same PR as** threading `user_id` through every repo + route — so `NOT NULL` is never
@@ -204,7 +216,8 @@ david/moa while any tenant-scoping or per-user-publishing piece is unfinished.
   active), so no per-user creds needed yet.
 - **PR3 — Per-user LinkedIn.** Encrypted per-user Zernio creds; connect onboarding
   (`connection.ts` + Settings panel); per-user cron publishing with the env fallback for
-  jens; drop the fallback once jens re-connects. **Then add david + moa to `ALLOWED_EMAILS`.**
+  jens; drop the fallback once jens re-connects. **Then expand `ALLOWED_DOMAINS` to add
+  `seventyoneconsulting.se` + `matherstudio.se`** (and drop any `ALLOWED_EMAILS` override).
 
 Each PR follows the repo rhythm (Linear `STU-NNN` → branch → TDD → CI → squash-merge →
 deploy). This spec is the umbrella; `writing-plans` turns it into the per-PR task lists.
@@ -215,9 +228,11 @@ deploy). This spec is the umbrella; `writing-plans` turns it into the per-PR tas
   tamper (wrong mac) → null; expired → null; wrong-secret → null.
 - **crypto.ts:** encrypt→decrypt round-trip; tampered ciphertext → throws; distinct `iv`
   per call.
-- **Google callback helpers (pure, extracted):** `isAllowedEmail`, `verifyState`,
-  `parseIdToken` — allow/deny by allowlist + `email_verified`; state mismatch rejected;
-  malformed id_token rejected. Google network calls mocked.
+- **Google callback helpers (pure, extracted):** `isAllowedIdentity` (domain allowlist +
+  optional email override + `email_verified`), `verifyState`, `parseIdToken` — allow a
+  matching domain, deny a non-listed domain, deny unverified email, honor the
+  `ALLOWED_EMAILS` override when set; state mismatch rejected; malformed id_token rejected.
+  Google network calls mocked.
 - **Repos:** user-scoping guards — `getPost(other, id)` → null; `updatePost`/`deletePost`
   cross-user → no-op/`null`. (Uses the existing repo test approach; a small DB/mock harness
   as needed.)
@@ -240,11 +255,11 @@ deploy). This spec is the umbrella; `writing-plans` turns it into the per-PR tas
 - CSRF: same-site cookie + JSON-only mutations; add a double-submit token if we later relax
   SameSite. (Noted, not required now.)
 
-## 12. Open questions for review
+## 12. Decisions resolved in review (2026-08-18)
 
-1. `ALLOWED_EMAILS` (exact emails) vs allowing whole **domains** — spec assumes exact
-   emails. OK?
-2. Encryption key: new `CRED_ENC_KEY` (assumed) vs deriving from `SESSION_SECRET`. Prefer a
-   dedicated key so rotating one doesn't invalidate the other. OK?
-3. Onboarding MVP = paste API key (assumed). Confirm we defer the one-click Zernio connect
-   flow to a later polish PR.
+1. **Domain allowlist** (`ALLOWED_DOMAINS`), not exact emails — the three company domains.
+   Staged env value for rollout safety per §2/§9.
+2. **Dedicated `CRED_ENC_KEY`** for encrypting stored Zernio keys (separate from
+   `SESSION_SECRET`), so rotating one doesn't invalidate the other.
+3. **Onboarding MVP = paste API key.** The one-click Zernio connect flow is deferred to a
+   later polish PR.
