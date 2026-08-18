@@ -14,7 +14,7 @@ export default function App() {
   const location = useLocation()
 
   useEffect(() => {
-    api.me().then(setMe)
+    api.me().then(setMe).catch(() => setMe(null))
   }, [])
 
   // Keep the nav badges fresh: refetch on auth and whenever the route changes

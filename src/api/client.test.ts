@@ -64,6 +64,11 @@ describe('api client', () => {
       fetchMock.mockResolvedValueOnce(res(401))
       await expect(api.me()).resolves.toBeNull()
     })
+
+    it('rejects when fetch rejects — me() has no try/catch, unlike the old password-era version', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('network down'))
+      await expect(api.me()).rejects.toThrow('network down')
+    })
   })
 
   describe('listPosts', () => {

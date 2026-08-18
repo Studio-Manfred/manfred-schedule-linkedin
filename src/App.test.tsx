@@ -61,4 +61,14 @@ describe('App', () => {
     expect(await screen.findByRole('banner')).toBeInTheDocument()
     expect(screen.getByText('jens@studiomanfred.com')).toBeInTheDocument()
   })
+
+  it('falls back to the login screen when api.me() rejects (e.g. a network failure)', async () => {
+    vi.mocked(api.me).mockRejectedValue(new Error('network down'))
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('link', { name: /sign in with google/i })).toBeInTheDocument()
+  })
 })

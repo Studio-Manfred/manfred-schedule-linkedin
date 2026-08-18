@@ -35,8 +35,8 @@ async function mockApi(page: Page, initial: MockPost[] = []) {
     const json = (status: number, body: unknown) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
-    if (path === '/api/auth/me') return route.fulfill({ status: 204 })
-    if (path === '/api/auth/login') return route.fulfill({ status: 204 })
+    if (path === '/api/auth/me')
+      return json(200, { email: 'jens@studiomanfred.com', name: 'Jens', linkedinConnected: true })
     if (path === '/api/auth/logout') return route.fulfill({ status: 204 })
     if (path === '/api/slots') return json(200, { slots: state.slots })
     if (path === '/api/connection') return json(200, { connected: true, accountName: 'Jens Wedin' })
