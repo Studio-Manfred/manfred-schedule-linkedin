@@ -17,11 +17,22 @@ export function sendJson(res: VercelResponse, status: number, data: unknown): vo
 /** Sends 401 and returns false when the session cookie is missing/invalid. */
 export function requireAuth(req: VercelRequest, res: VercelResponse): boolean {
   const secret = process.env.SESSION_SECRET
-  if (!secret || !verifySession(secret, readCookie(req, 'session'))) {
+  if (!secret || verifySession(secret, readCookie(req, 'session')) === null) {
     sendJson(res, 401, { error: 'unauthorized' })
     return false
   }
   return true
+}
+
+/** Sends 401 and returns null when unauthenticated; otherwise returns the userId. */
+export function requireUser(req: VercelRequest, res: VercelResponse): string | null {
+  const secret = process.env.SESSION_SECRET
+  const userId = secret ? verifySession(secret, readCookie(req, 'session')) : null
+  if (!userId) {
+    sendJson(res, 401, { error: 'unauthorized' })
+    return null
+  }
+  return userId
 }
 
 /** Sends 405 and returns false when the method doesn't match. */
