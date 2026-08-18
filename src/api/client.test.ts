@@ -40,30 +40,6 @@ describe('api client', () => {
     vi.unstubAllGlobals()
   })
 
-  describe('login', () => {
-    it('POSTs credentials as JSON and resolves on 204', async () => {
-      fetchMock.mockResolvedValueOnce(res(204))
-
-      await expect(api.login('secret')).resolves.toBeUndefined()
-
-      expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, init] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/auth/login')
-      expect(init.method).toBe('POST')
-      expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
-      expect(init.body).toBe(JSON.stringify({ password: 'secret' }))
-    })
-
-    it('throws ApiError with the server message and status on 401', async () => {
-      fetchMock.mockResolvedValueOnce(res(401, { error: 'wrong password' }))
-
-      const error = await api.login('bad').catch((e: unknown) => e)
-
-      expect(error).toBeInstanceOf(ApiError)
-      expect(error).toMatchObject({ status: 401, message: 'wrong password' })
-    })
-  })
-
   describe('logout', () => {
     it('POSTs to /api/auth/logout and resolves on 204', async () => {
       fetchMock.mockResolvedValueOnce(res(204))
@@ -77,20 +53,16 @@ describe('api client', () => {
   })
 
   describe('me', () => {
-    it('returns true when /api/auth/me is ok', async () => {
-      fetchMock.mockResolvedValueOnce(res(200, {}))
-      await expect(api.me()).resolves.toBe(true)
+    it('returns the identity when /api/auth/me is ok', async () => {
+      const identity = { email: 'jens@studiomanfred.com', name: 'Jens Wedin', linkedinConnected: true }
+      fetchMock.mockResolvedValueOnce(res(200, identity))
+      await expect(api.me()).resolves.toEqual(identity)
       expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/me')
     })
 
-    it('returns false when /api/auth/me is not ok', async () => {
+    it('returns null when /api/auth/me is not ok', async () => {
       fetchMock.mockResolvedValueOnce(res(401))
-      await expect(api.me()).resolves.toBe(false)
-    })
-
-    it('returns false when fetch throws', async () => {
-      fetchMock.mockRejectedValueOnce(new Error('network down'))
-      await expect(api.me()).resolves.toBe(false)
+      await expect(api.me()).resolves.toBeNull()
     })
   })
 

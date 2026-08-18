@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppHeader, Badge, NavBar, NavItem } from '@studio-manfred/manfred-design-system'
-import { api } from '@/api/client'
+import { api, type Me } from '@/api/client'
 import { LoginScreen } from '@/screens/LoginScreen'
 import { QueueScreen } from '@/screens/QueueScreen'
 import { ComposerScreen } from '@/screens/ComposerScreen'
@@ -9,19 +9,18 @@ import { HistoryScreen } from '@/screens/HistoryScreen'
 import { SettingsScreen } from '@/screens/SettingsScreen'
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null)
+  const [me, setMe] = useState<Me | null | undefined>(undefined)
   const [counts, setCounts] = useState({ queue: 0, history: 0 })
-  const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    api.me().then(setAuthed)
+    api.me().then(setMe)
   }, [])
 
   // Keep the nav badges fresh: refetch on auth and whenever the route changes
   // (e.g. after adding or deleting a post and navigating back).
   useEffect(() => {
-    if (authed !== true) return
+    if (!me) return
     let cancelled = false
     api
       .listPosts()
@@ -36,11 +35,11 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [authed, location.pathname])
+  }, [me, location.pathname])
 
   async function logout() {
     await api.logout()
-    setAuthed(false)
+    setMe(null)
   }
 
   const isActive = (to: string) =>
@@ -53,16 +52,8 @@ export default function App() {
     { to: '/settings', label: 'Settings', count: null },
   ]
 
-  if (authed === null) return <p className="p-8">Loading…</p>
-  if (!authed)
-    return (
-      <LoginScreen
-        onSuccess={() => {
-          setAuthed(true)
-          navigate('/')
-        }}
-      />
-    )
+  if (me === undefined) return <p className="p-8">Loading…</p>
+  if (!me) return <LoginScreen />
 
   return (
     <>
@@ -71,7 +62,7 @@ export default function App() {
       </a>
       <AppHeader
         appName="Schedule"
-        user={{ name: 'Jens Wedin', onSignOut: logout, signOutLabel: 'Log out' }}
+        user={{ name: me.name ?? undefined, email: me.email, onSignOut: logout, signOutLabel: 'Log out' }}
         nav={
           <NavBar aria-label="Main">
             {NAV.map((item) => (
@@ -94,7 +85,7 @@ export default function App() {
           <Route path="/" element={<QueueScreen />} />
           <Route path="/compose" element={<ComposerScreen />} />
           <Route path="/history" element={<HistoryScreen />} />
-          <Route path="/settings" element={<SettingsScreen onLogout={() => setAuthed(false)} />} />
+          <Route path="/settings" element={<SettingsScreen onLogout={() => setMe(null)} />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
