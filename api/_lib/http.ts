@@ -36,3 +36,8 @@ export const SESSION_COOKIE = (token: string) =>
   `session=${token}; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax; Secure`
 
 export const CLEAR_COOKIE = 'session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure'
+
+export const FLOW_COOKIE = (name: string, value: string) =>
+  `${name}=${value}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`
+export const CLEAR_FLOW_COOKIE = (name: string) =>
+  `${name}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure`
