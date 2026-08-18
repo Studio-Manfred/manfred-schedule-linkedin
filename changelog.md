@@ -16,6 +16,9 @@
   `new Date()`, so branch coverage drifted below the ratchet tolerance as months passed and failed
   unrelated PRs. (STU-687)
 
+### Changed
+- Auth: replaced the shared password with Google sign-in; sessions now carry a user identity (foundation for per-user schedules). Signup gated to Google accounts on `ALLOWED_DOMAINS`. (STU-688)
+
 ## 0.2.0 — 2026-07-20
 
 ### Added
