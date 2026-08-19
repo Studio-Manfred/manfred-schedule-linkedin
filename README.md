@@ -72,9 +72,15 @@ npm run dev         # or: vercel dev, to run api/ locally alongside the SPA
 
 Copy `.env.example` to `.env.local` (or `vercel env pull .env.local` once provisioned):
 
+**Authentication** — Sign in via Google OAuth. Create a Web application OAuth client in Google Cloud Console (APIs & Services → Credentials); set authorized redirect URI to `${APP_URL}/api/auth/google/callback`. Signup is gated by `ALLOWED_DOMAINS` (PR1: `studiomanfred.com` only); for early rollout, use `ALLOWED_EMAILS` to limit to exact addresses.
+
 | Var | Purpose |
 | --- | --- |
-| `APP_PASSWORD` | Single-user login password, checked at `/api/auth/login`. |
+| `GOOGLE_CLIENT_ID` | OAuth client ID from Google Cloud Console. |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret (private, server-side only). |
+| `APP_URL` | Public base URL (e.g., `https://manfred-schedule-linkedin.vercel.app`), used to build the OAuth redirect URI. |
+| `ALLOWED_DOMAINS` | Comma-separated email domains for signup allowlist (e.g., `studiomanfred.com`). |
+| `ALLOWED_EMAILS` | Optional: comma-separated exact emails to restrict signup during rollout; leave blank to use domains only. |
 | `SESSION_SECRET` | 32+ random bytes used to sign the httpOnly session cookie. |
 | `CRON_SECRET` | Guards `/api/cron/publish`; Vercel sends it automatically when set in project env. |
 | `ZERNIO_API_KEY` | Zernio API auth (Settings → API Keys at zernio.com). Server-side only, never sent to the browser. |

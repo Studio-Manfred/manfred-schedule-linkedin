@@ -26,20 +26,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T
 }
 
+export interface Me {
+  email: string
+  name: string | null
+  linkedinConnected: boolean
+}
+
 export const api = {
-  async login(password: string): Promise<void> {
-    await request<void>('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
-  },
   async logout(): Promise<void> {
     await request<void>('/api/auth/logout', { method: 'POST' })
   },
-  async me(): Promise<boolean> {
-    try {
-      const res = await fetch('/api/auth/me')
-      return res.ok
-    } catch {
-      return false
-    }
+  async me(): Promise<Me | null> {
+    const res = await fetch('/api/auth/me')
+    return res.ok ? ((await res.json()) as Me) : null
   },
   async listPosts(): Promise<Post[]> {
     return (await request<{ posts: Post[] }>('/api/posts')).posts
