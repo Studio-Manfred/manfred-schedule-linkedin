@@ -3,6 +3,27 @@
 Session log. Newest first. One entry per working session; record what shipped, what is
 half-done, and the next pickup point. Convert relative dates to absolute.
 
+## 2026-08-24 — PR3 per-user LinkedIn credentials shipped (STU-690)
+
+- **Shipped:** per-user Zernio credential encryption and management system. Added
+  `CRED_ENC_KEY` (AES-256-GCM, 32-byte base64) and `ZERNIO_FALLBACK_EMAIL` env vars;
+  Settings → Connect LinkedIn panel for users to paste their own Zernio API keys (stored
+  encrypted, never plaintext); per-user cron publish using each user's own credentials
+  with env fallback for jens until he reconnects; 3 domains in allowlist (studiomanfred.com,
+  seventyoneconsulting.se, matherstudio.se) documented and ready to open in the next step.
+- **Operator rollout order (critical — **do in sequence**):
+  1. Set `CRED_ENC_KEY=<openssl rand -base64 32>` and
+     `ZERNIO_FALLBACK_EMAIL=jens@studiomanfred.com` in Vercel (Production). Redeploy.
+  2. Jens opens Settings → Connect LinkedIn → pastes his own Zernio API key → confirms
+     account. Env fallback keeps his posts publishing during transition.
+  3. Verify a real publish works with his own creds. Once confirmed, `ZERNIO_FALLBACK_EMAIL`
+     (and env `ZERNIO_*` fallback) can be removed.
+  4. **Only then** set `ALLOWED_DOMAINS=studiomanfred.com,seventyoneconsulting.se,matherstudio.se`,
+     add David + Moa as Google OAuth test users, and tell them to onboard (each creates
+     Zernio account, connects LinkedIn, pastes API key in Settings).
+- **Next pickup:** operator executes the rollout sequence above; then if needed, open the
+  allowlist and onboard David / Moa.
+
 ## 2026-08-24 — PR2 tenant scoping shipped (STU-689)
 
 - **Shipped:** multi-tenant data isolation — `posts` and `schedule_slots` now carry a
