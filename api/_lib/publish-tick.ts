@@ -1,15 +1,17 @@
-import { MAX_ATTEMPTS, MISSED_WINDOW_MINUTES, STUCK_PUBLISHING_MINUTES, type Post } from '../../src/lib/types.js'
+import { MAX_ATTEMPTS, MISSED_WINDOW_MINUTES, STUCK_PUBLISHING_MINUTES } from '../../src/lib/types.js'
+import type { ClaimedPost } from './posts-repo.js'
 import type { Publisher } from './publisher.js'
 
 export interface TickDeps {
   now(): Date
-  claimDuePosts(now: Date): Promise<Post[]>
+  claimDuePosts(now: Date): Promise<ClaimedPost[]>
+  releaseToQueued(id: string): Promise<void>
   requeue(id: string, error: string): Promise<void>
   markPublished(id: string, zernioPostId: string, linkedinUrl: string | null): Promise<void>
   markFailed(id: string, error: string): Promise<void>
   markMissed(id: string): Promise<void>
   sweepStuck(cutoff: Date): Promise<number>
-  publisher: Publisher
+  resolvePublisher(userId: string): Promise<Publisher | null>
 }
 
 export interface TickResult {
@@ -17,14 +19,22 @@ export interface TickResult {
   requeued: number
   failed: number
   missed: number
+  released: number
   swept: number
 }
 
 export async function runPublishTick(deps: TickDeps): Promise<TickResult> {
   const now = deps.now()
-  const result: TickResult = { published: 0, requeued: 0, failed: 0, missed: 0, swept: 0 }
+  const result: TickResult = { published: 0, requeued: 0, failed: 0, missed: 0, released: 0, swept: 0 }
 
   result.swept = await deps.sweepStuck(new Date(now.getTime() - STUCK_PUBLISHING_MINUTES * 60_000))
+
+  // Resolve each distinct user's publisher at most once per tick.
+  const publishers = new Map<string, Publisher | null>()
+  const publisherFor = async (userId: string): Promise<Publisher | null> => {
+    if (!publishers.has(userId)) publishers.set(userId, await deps.resolvePublisher(userId))
+    return publishers.get(userId) ?? null
+  }
 
   for (const post of await deps.claimDuePosts(now)) {
     const scheduled = post.scheduledAt ? new Date(post.scheduledAt) : now
@@ -33,7 +43,13 @@ export async function runPublishTick(deps: TickDeps): Promise<TickResult> {
       result.missed++
       continue
     }
-    const outcome = await deps.publisher.publish({
+    const publisher = await publisherFor(post.userId)
+    if (!publisher) {
+      await deps.releaseToQueued(post.id)
+      result.released++
+      continue
+    }
+    const outcome = await publisher.publish({
       requestId: post.id,
       body: post.body,
       images: post.images.map((i) => ({ url: i.url, alt: i.alt, contentType: guessContentType(i.url) })),
