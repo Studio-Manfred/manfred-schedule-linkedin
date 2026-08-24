@@ -12,7 +12,8 @@ half-done, and the next pickup point. Convert relative dates to absolute.
   remains env-based for now (only jens active) — per-user LinkedIn credentials are PR3.
 - **Coverage:** repo scoping (`listPosts`, `getPost`, `insertPost`, `updatePost`, `deletePost`,
   `listQueuedUnpinnedIds`, `listPinnedFutureTimes`, `saveSchedule`, `setPositions`,
-  `nextPosition`, `listSlots`, `replaceSlots`, `recomputeQueueLive`), route scoping
+  `nextPosition`, `listSlots`, `replaceSlots`) plus `recomputeQueueLive(userId)` reschedule
+  wiring (not a repo fn), route scoping
   (`POST/GET/DELETE /api/posts/`, `POST /api/posts/[id]/retry`, `POST /api/posts/reorder`,
   `GET/POST /api/slots`), `images` intentionally stays `requireAuth` only (no DB
   ownership); `claimDuePosts`, `sweepStuck`, cron untouched (global, expected).
