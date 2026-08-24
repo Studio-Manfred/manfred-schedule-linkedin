@@ -3,6 +3,25 @@
 Session log. Newest first. One entry per working session; record what shipped, what is
 half-done, and the next pickup point. Convert relative dates to absolute.
 
+## 2026-08-24 — PR2 tenant scoping shipped (STU-689)
+
+- **Shipped:** multi-tenant data isolation — `posts` and `schedule_slots` now carry a
+  `user_id` owner (migration `004`), all queue/draft/history/slots reads and writes are
+  scoped to the signed-in user with `AND user_id = …` ownership guards on every route
+  (`requireUser` middleware), and IDOR guards prevent cross-user access. Publishing
+  remains env-based for now (only jens active) — per-user LinkedIn credentials are PR3.
+- **Coverage:** repo scoping (`listPosts`, `getPost`, `insertPost`, `updatePost`, `deletePost`,
+  `listQueuedUnpinnedIds`, `listPinnedFutureTimes`, `saveSchedule`, `setPositions`,
+  `nextPosition`, `listSlots`, `replaceSlots`) plus `recomputeQueueLive(userId)` reschedule
+  wiring (not a repo fn), route scoping
+  (`POST/GET/DELETE /api/posts/`, `POST /api/posts/[id]/retry`, `POST /api/posts/reorder`,
+  `GET/POST /api/slots`), `images` intentionally stays `requireAuth` only (no DB
+  ownership); `claimDuePosts`, `sweepStuck`, cron untouched (global, expected).
+- **Sequencing:** migration `004` (add + backfill + `NOT NULL`) landed in the same PR as
+  the repo writes, so `NOT NULL` is never live before writes set `user_id`.
+- **Next pickup:** PR3 (per-user Zernio credentials + connect onboarding), then open
+  `ALLOWED_DOMAINS` to `seventyoneconsulting.se` + `matherstudio.se`.
+
 ## 2026-08-18 — Neon Free compute quota exhausted → publish cron slowed to 30 min
 
 - **Trigger:** Neon reported `100.16 / 100 CU-hrs` mid-month on ~zero real traffic.

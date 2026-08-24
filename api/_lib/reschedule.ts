@@ -22,13 +22,13 @@ export async function recomputeQueue(deps: RescheduleDeps): Promise<void> {
   await deps.saveSchedule([...dealt.entries()].map(([id, scheduledAt]) => ({ id, scheduledAt })))
 }
 
-/** Production wiring — call after any queue mutation. */
-export function recomputeQueueLive(): Promise<void> {
+/** Production wiring — call after any queue mutation, scoped to one user. */
+export function recomputeQueueLive(userId: string): Promise<void> {
   return recomputeQueue({
-    listSlots: slotsRepo.listSlots,
-    listQueuedUnpinnedIds: postsRepo.listQueuedUnpinnedIds,
-    listPinnedFutureTimes: postsRepo.listPinnedFutureTimes,
-    saveSchedule: postsRepo.saveSchedule,
+    listSlots: () => slotsRepo.listSlots(userId),
+    listQueuedUnpinnedIds: () => postsRepo.listQueuedUnpinnedIds(userId),
+    listPinnedFutureTimes: (now) => postsRepo.listPinnedFutureTimes(userId, now),
+    saveSchedule: (entries) => postsRepo.saveSchedule(userId, entries),
     now: () => new Date(),
   })
 }

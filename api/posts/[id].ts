@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { methodIs, requireAuth, sendJson } from '../_lib/http.js'
+import { methodIs, requireUser, sendJson } from '../_lib/http.js'
 import { validatePostInput } from '../_lib/validate.js'
 import { recomputeQueueLive } from '../_lib/reschedule.js'
 import * as posts from '../_lib/posts-repo.js'
@@ -9,14 +9,15 @@ const EDITABLE = new Set(['draft', 'queued', 'failed', 'missed'])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodIs(req, res, 'PATCH', 'DELETE')) return
-  if (!requireAuth(req, res)) return
+  const userId = requireUser(req, res)
+  if (!userId) return
   const id = String(req.query.id)
-  const existing = await posts.getPost(id)
+  const existing = await posts.getPost(userId, id)
   if (!existing) return sendJson(res, 404, { error: 'not found' })
 
   if (req.method === 'DELETE') {
-    await posts.deletePost(id)
-    await recomputeQueueLive()
+    await posts.deletePost(userId, id)
+    await recomputeQueueLive(userId)
     return res.status(204).end()
   }
 
@@ -31,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!valid.ok) return sendJson(res, 422, { error: valid.error })
 
   const action = req.body?.action as 'draft' | 'queue' | 'pin' | undefined
-  let patch: Parameters<typeof posts.updatePost>[1] = {
+  let patch: Parameters<typeof posts.updatePost>[2] = {
     body: valid.value.body,
     images: valid.value.images,
     firstComment: valid.value.firstComment,
@@ -42,13 +43,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendJson(res, 422, { error: 'pin requires a future scheduledAt' })
     patch = { ...patch, status: 'queued', pinned: true, position: null, scheduledAt: at, attempts: 0, error: null }
   } else if (action === 'queue') {
-    if ((await slots.listSlots()).length === 0)
+    if ((await slots.listSlots(userId)).length === 0)
       return sendJson(res, 422, { error: 'no posting slots configured — add slots in Settings or pin a time' })
     patch = {
       ...patch,
       status: 'queued',
       pinned: false,
-      position: existing.status === 'queued' && !existing.pinned ? existing.position : await posts.nextPosition(),
+      position: existing.status === 'queued' && !existing.pinned ? existing.position : await posts.nextPosition(userId),
       attempts: 0,
       error: null,
     }
@@ -56,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     patch = { ...patch, status: 'draft', pinned: false, position: null, scheduledAt: null }
   }
 
-  const updated = await posts.updatePost(id, patch)
-  await recomputeQueueLive()
-  return sendJson(res, 200, { post: (await posts.getPost(id)) ?? updated })
+  const updated = await posts.updatePost(userId, id, patch)
+  await recomputeQueueLive(userId)
+  return sendJson(res, 200, { post: (await posts.getPost(userId, id)) ?? updated })
 }

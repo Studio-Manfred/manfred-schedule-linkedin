@@ -43,28 +43,28 @@ function rowToPost(r: any): Post {
   }
 }
 
-export async function listPosts(statuses?: PostStatus[]): Promise<Post[]> {
+export async function listPosts(userId: string, statuses?: PostStatus[]): Promise<Post[]> {
   const rows = statuses
-    ? await sql()`SELECT * FROM posts WHERE status = ANY(${statuses}) ORDER BY scheduled_at NULLS LAST, position NULLS LAST, created_at DESC`
-    : await sql()`SELECT * FROM posts ORDER BY scheduled_at NULLS LAST, position NULLS LAST, created_at DESC`
+    ? await sql()`SELECT * FROM posts WHERE user_id = ${userId} AND status = ANY(${statuses}) ORDER BY scheduled_at NULLS LAST, position NULLS LAST, created_at DESC`
+    : await sql()`SELECT * FROM posts WHERE user_id = ${userId} ORDER BY scheduled_at NULLS LAST, position NULLS LAST, created_at DESC`
   return (rows as any[]).map(rowToPost)
 }
 
-export async function getPost(id: string): Promise<Post | null> {
-  const rows = (await sql()`SELECT * FROM posts WHERE id = ${id}`) as any[]
+export async function getPost(userId: string, id: string): Promise<Post | null> {
+  const rows = (await sql()`SELECT * FROM posts WHERE id = ${id} AND user_id = ${userId}`) as any[]
   return rows[0] ? rowToPost(rows[0]) : null
 }
 
-export async function insertPost(p: NewPost): Promise<Post> {
+export async function insertPost(userId: string, p: NewPost): Promise<Post> {
   const rows = (await sql()`
-    INSERT INTO posts (body, images, first_comment, status, pinned, position, scheduled_at)
-    VALUES (${p.body}, ${JSON.stringify(p.images)}::jsonb, ${p.firstComment}, ${p.status}, ${p.pinned}, ${p.position}, ${p.scheduledAt})
+    INSERT INTO posts (user_id, body, images, first_comment, status, pinned, position, scheduled_at)
+    VALUES (${userId}, ${p.body}, ${JSON.stringify(p.images)}::jsonb, ${p.firstComment}, ${p.status}, ${p.pinned}, ${p.position}, ${p.scheduledAt})
     RETURNING *`) as any[]
   return rowToPost(rows[0])
 }
 
-export async function updatePost(id: string, patch: Partial<PostPatch>): Promise<Post | null> {
-  const cur = await getPost(id)
+export async function updatePost(userId: string, id: string, patch: Partial<PostPatch>): Promise<Post | null> {
+  const cur = await getPost(userId, id)
   if (!cur) return null
   const next = {
     body: patch.body ?? cur.body,
@@ -88,44 +88,44 @@ export async function updatePost(id: string, patch: Partial<PostPatch>): Promise
       status = ${next.status}, pinned = ${next.pinned}, position = ${next.position},
       scheduled_at = ${next.scheduledAt}, attempts = ${next.attempts}, error = ${next.error},
       updated_at = now()
-    WHERE id = ${id} RETURNING *`) as any[]
+    WHERE id = ${id} AND user_id = ${userId} RETURNING *`) as any[]
   return rows[0] ? rowToPost(rows[0]) : null
 }
 
-export async function deletePost(id: string): Promise<void> {
-  await sql()`DELETE FROM posts WHERE id = ${id}`
+export async function deletePost(userId: string, id: string): Promise<void> {
+  await sql()`DELETE FROM posts WHERE id = ${id} AND user_id = ${userId}`
 }
 
-export async function listQueuedUnpinnedIds(): Promise<string[]> {
+export async function listQueuedUnpinnedIds(userId: string): Promise<string[]> {
   const rows = (await sql()`
-    SELECT id FROM posts WHERE status = 'queued' AND pinned = false
+    SELECT id FROM posts WHERE user_id = ${userId} AND status = 'queued' AND pinned = false
     ORDER BY position ASC NULLS LAST, created_at ASC`) as any[]
   return rows.map((r) => r.id)
 }
 
-export async function listPinnedFutureTimes(now: Date): Promise<Date[]> {
+export async function listPinnedFutureTimes(userId: string, now: Date): Promise<Date[]> {
   const rows = (await sql()`
     SELECT scheduled_at FROM posts
-    WHERE status = 'queued' AND pinned = true AND scheduled_at > ${now}`) as any[]
+    WHERE user_id = ${userId} AND status = 'queued' AND pinned = true AND scheduled_at > ${now}`) as any[]
   return rows.map((r) => new Date(r.scheduled_at))
 }
 
-export async function saveSchedule(entries: { id: string; scheduledAt: Date }[]): Promise<void> {
+export async function saveSchedule(userId: string, entries: { id: string; scheduledAt: Date }[]): Promise<void> {
   for (const e of entries) {
-    await sql()`UPDATE posts SET scheduled_at = ${e.scheduledAt}, updated_at = now() WHERE id = ${e.id}`
+    await sql()`UPDATE posts SET scheduled_at = ${e.scheduledAt}, updated_at = now() WHERE id = ${e.id} AND user_id = ${userId}`
   }
 }
 
-export async function setPositions(orderedIds: string[]): Promise<void> {
+export async function setPositions(userId: string, orderedIds: string[]): Promise<void> {
   for (let i = 0; i < orderedIds.length; i++) {
-    await sql()`UPDATE posts SET position = ${i}, updated_at = now() WHERE id = ${orderedIds[i]}`
+    await sql()`UPDATE posts SET position = ${i}, updated_at = now() WHERE id = ${orderedIds[i]} AND user_id = ${userId}`
   }
 }
 
-export async function nextPosition(): Promise<number> {
+export async function nextPosition(userId: string): Promise<number> {
   const rows = (await sql()`
     SELECT COALESCE(MAX(position), -1) + 1 AS next FROM posts
-    WHERE status = 'queued' AND pinned = false`) as any[]
+    WHERE user_id = ${userId} AND status = 'queued' AND pinned = false`) as any[]
   return rows[0].next
 }
 
