@@ -17,11 +17,22 @@ export function sendJson(res: VercelResponse, status: number, data: unknown): vo
 /** Sends 401 and returns false when the session cookie is missing/invalid. */
 export function requireAuth(req: VercelRequest, res: VercelResponse): boolean {
   const secret = process.env.SESSION_SECRET
-  if (!secret || !verifySession(secret, readCookie(req, 'session'))) {
+  if (!secret || verifySession(secret, readCookie(req, 'session')) === null) {
     sendJson(res, 401, { error: 'unauthorized' })
     return false
   }
   return true
+}
+
+/** Sends 401 and returns null when unauthenticated; otherwise returns the userId. */
+export function requireUser(req: VercelRequest, res: VercelResponse): string | null {
+  const secret = process.env.SESSION_SECRET
+  const userId = secret ? verifySession(secret, readCookie(req, 'session')) : null
+  if (!userId) {
+    sendJson(res, 401, { error: 'unauthorized' })
+    return null
+  }
+  return userId
 }
 
 /** Sends 405 and returns false when the method doesn't match. */
@@ -36,3 +47,8 @@ export const SESSION_COOKIE = (token: string) =>
   `session=${token}; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax; Secure`
 
 export const CLEAR_COOKIE = 'session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure'
+
+export const FLOW_COOKIE = (name: string, value: string) =>
+  `${name}=${value}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`
+export const CLEAR_FLOW_COOKIE = (name: string) =>
+  `${name}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure`
