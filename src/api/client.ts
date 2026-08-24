@@ -83,4 +83,13 @@ export const api = {
   async getConnection(): Promise<{ connected: boolean; accountName: string | null }> {
     return request('/api/connection')
   },
+  async connectStart(apiKey: string): Promise<{ accounts: { id: string; name: string }[] }> {
+    return request('/api/connection', { method: 'POST', body: JSON.stringify({ apiKey }) })
+  },
+  async connectConfirm(apiKey: string, accountId: string): Promise<{ connected: boolean; accountName: string | null }> {
+    return request('/api/connection', { method: 'POST', body: JSON.stringify({ apiKey, accountId }) })
+  },
+  async disconnect(): Promise<void> {
+    await request<void>('/api/connection', { method: 'DELETE' })
+  },
 }

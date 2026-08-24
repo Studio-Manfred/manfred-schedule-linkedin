@@ -8,7 +8,16 @@ vi.mock('@/api/client', async (importOriginal) => {
   const mod = await importOriginal<typeof import('@/api/client')>()
   return {
     ...mod,
-    api: { ...mod.api, getSlots: vi.fn(), putSlots: vi.fn(), getConnection: vi.fn(), logout: vi.fn() },
+    api: {
+      ...mod.api,
+      getSlots: vi.fn(),
+      putSlots: vi.fn(),
+      getConnection: vi.fn(),
+      logout: vi.fn(),
+      connectStart: vi.fn(),
+      connectConfirm: vi.fn(),
+      disconnect: vi.fn(),
+    },
   }
 })
 
@@ -35,5 +44,45 @@ describe('SettingsScreen', () => {
       { weekday: 1, timeLocal: '08:30' },
       { weekday: 0, timeLocal: '09:00' },
     ])
+  })
+
+  it('connects LinkedIn: paste key, find account, confirm', async () => {
+    vi.mocked(api.getConnection).mockResolvedValue({ connected: false, accountName: null })
+    vi.mocked(api.connectStart).mockResolvedValue({ accounts: [{ id: 'a1', name: 'Jens Wedin' }] })
+    vi.mocked(api.connectConfirm).mockResolvedValue({ connected: true, accountName: 'Jens Wedin' })
+    render(<SettingsScreen onLogout={vi.fn()} />)
+    await screen.findByLabelText(/zernio api key/i)
+    await userEvent.type(screen.getByLabelText(/zernio api key/i), 'zk_test')
+    await userEvent.click(screen.getByRole('button', { name: /find.*account/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /^connect$/i }))
+    expect(api.connectConfirm).toHaveBeenCalledWith('zk_test', 'a1')
+  })
+
+  it('shows a message when no LinkedIn account is connected in Zernio', async () => {
+    vi.mocked(api.getConnection).mockResolvedValue({ connected: false, accountName: null })
+    vi.mocked(api.connectStart).mockResolvedValue({ accounts: [] })
+    render(<SettingsScreen onLogout={vi.fn()} />)
+    await screen.findByLabelText(/zernio api key/i)
+    await userEvent.type(screen.getByLabelText(/zernio api key/i), 'zk_test')
+    await userEvent.click(screen.getByRole('button', { name: /find.*account/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no linkedin account is connected/i)
+  })
+
+  it('shows an error when finding the account fails', async () => {
+    vi.mocked(api.getConnection).mockResolvedValue({ connected: false, accountName: null })
+    vi.mocked(api.connectStart).mockRejectedValue(new Error('bad key'))
+    render(<SettingsScreen onLogout={vi.fn()} />)
+    await screen.findByLabelText(/zernio api key/i)
+    await userEvent.type(screen.getByLabelText(/zernio api key/i), 'zk_bad')
+    await userEvent.click(screen.getByRole('button', { name: /find.*account/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('bad key')
+  })
+
+  it('disconnects LinkedIn', async () => {
+    vi.mocked(api.getConnection).mockResolvedValue({ connected: true, accountName: 'Jens Wedin' })
+    vi.mocked(api.disconnect).mockResolvedValue()
+    render(<SettingsScreen onLogout={vi.fn()} />)
+    await userEvent.click(await screen.findByRole('button', { name: /disconnect/i }))
+    expect(api.disconnect).toHaveBeenCalled()
   })
 })

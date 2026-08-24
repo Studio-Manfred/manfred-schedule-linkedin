@@ -211,6 +211,56 @@ describe('api client', () => {
     })
   })
 
+  describe('getConnection', () => {
+    it('GETs /api/connection and returns the connection state', async () => {
+      const connection = { connected: true, accountName: 'Jens Wedin' }
+      fetchMock.mockResolvedValueOnce(res(200, connection))
+
+      await expect(api.getConnection()).resolves.toEqual(connection)
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/connection')
+    })
+  })
+
+  describe('connectStart', () => {
+    it('POSTs { apiKey } and returns { accounts }', async () => {
+      const accounts = [{ id: 'a1', name: 'Jens Wedin' }]
+      fetchMock.mockResolvedValueOnce(res(200, { accounts }))
+
+      await expect(api.connectStart('zk_test')).resolves.toEqual({ accounts })
+
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('/api/connection')
+      expect(init.method).toBe('POST')
+      expect(init.body).toBe(JSON.stringify({ apiKey: 'zk_test' }))
+    })
+  })
+
+  describe('connectConfirm', () => {
+    it('POSTs { apiKey, accountId } and returns { connected, accountName }', async () => {
+      const connection = { connected: true, accountName: 'Jens Wedin' }
+      fetchMock.mockResolvedValueOnce(res(200, connection))
+
+      await expect(api.connectConfirm('zk_test', 'a1')).resolves.toEqual(connection)
+
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('/api/connection')
+      expect(init.method).toBe('POST')
+      expect(init.body).toBe(JSON.stringify({ apiKey: 'zk_test', accountId: 'a1' }))
+    })
+  })
+
+  describe('disconnect', () => {
+    it('DELETEs /api/connection and resolves undefined on 204', async () => {
+      fetchMock.mockResolvedValueOnce(res(204))
+
+      await expect(api.disconnect()).resolves.toBeUndefined()
+
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('/api/connection')
+      expect(init.method).toBe('DELETE')
+    })
+  })
+
   describe('401 redirect for non-auth requests', () => {
     let assignMock: ReturnType<typeof vi.fn>
 
