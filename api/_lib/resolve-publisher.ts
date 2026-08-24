@@ -18,15 +18,15 @@ export async function resolvePublisher(userId: string, deps: ResolveDeps): Promi
   try {
     const creds = await deps.getZernioCreds(userId)
     if (creds) return deps.makePublisher({ apiKey: deps.decrypt(creds.apiKeyEnc), accountId: creds.accountId })
+    const { apiKey, accountId, fallbackEmail } = deps.env
+    if (apiKey && accountId && fallbackEmail) {
+      const user = await deps.getUserById(userId)
+      if (user && user.email.toLowerCase() === fallbackEmail.toLowerCase()) {
+        return deps.makePublisher({ apiKey, accountId })
+      }
+    }
+    return null
   } catch {
     return null
   }
-  const { apiKey, accountId, fallbackEmail } = deps.env
-  if (apiKey && accountId && fallbackEmail) {
-    const user = await deps.getUserById(userId)
-    if (user && user.email.toLowerCase() === fallbackEmail.toLowerCase()) {
-      return deps.makePublisher({ apiKey, accountId })
-    }
-  }
-  return null
 }

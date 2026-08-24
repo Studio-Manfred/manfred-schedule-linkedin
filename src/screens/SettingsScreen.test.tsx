@@ -85,4 +85,12 @@ describe('SettingsScreen', () => {
     await userEvent.click(await screen.findByRole('button', { name: /disconnect/i }))
     expect(api.disconnect).toHaveBeenCalled()
   })
+
+  it('shows an error when disconnect fails', async () => {
+    vi.mocked(api.getConnection).mockResolvedValue({ connected: true, accountName: 'Jens Wedin' })
+    vi.mocked(api.disconnect).mockRejectedValue(new Error('network down'))
+    render(<SettingsScreen onLogout={vi.fn()} />)
+    await userEvent.click(await screen.findByRole('button', { name: /disconnect/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/network down/i)
+  })
 })

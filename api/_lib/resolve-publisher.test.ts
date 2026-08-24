@@ -62,4 +62,12 @@ describe('resolvePublisher', () => {
     })
     expect(await resolvePublisher('u-jens', d)).toBeNull()
   })
+
+  it('returns null (does not throw) when the fallback user lookup fails', async () => {
+    const d = deps({
+      getUserById: vi.fn(async () => { throw new Error('db down') }),
+      env: { apiKey: 'envK', accountId: 'envA', fallbackEmail: 'jens@studiomanfred.com' },
+    })
+    expect(await resolvePublisher('u-jens', d)).toBeNull()
+  })
 })

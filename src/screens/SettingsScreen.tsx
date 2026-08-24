@@ -67,13 +67,10 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
     }
   }
   async function disconnect() {
-    setConnBusy(true)
-    try {
-      await api.disconnect()
-      await refreshConnection()
-    } finally {
-      setConnBusy(false)
-    }
+    setConnError(null); setConnBusy(true)
+    try { await api.disconnect(); await refreshConnection() }
+    catch (e) { setConnError(e instanceof Error ? e.message : 'disconnect failed') }
+    finally { setConnBusy(false) }
   }
 
   function update(i: number, patch: Partial<SlotRow>) {
@@ -185,14 +182,17 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
         {connection === null ? (
           <p className="text-sm text-muted-foreground">Checking…</p>
         ) : connection.connected ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="flex items-center gap-2">
-              <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-green-500" />
-              Connected via Zernio as <strong>{connection.accountName}</strong>
-            </p>
-            <Button type="button" variant="outline" className="ml-auto" onClick={disconnect} disabled={connBusy}>
-              Disconnect
-            </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="flex items-center gap-2">
+                <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                Connected via Zernio as <strong>{connection.accountName}</strong>
+              </p>
+              <Button type="button" variant="outline" className="ml-auto" onClick={disconnect} disabled={connBusy}>
+                Disconnect
+              </Button>
+            </div>
+            {connError && <p role="alert" className="text-sm text-destructive">{connError}</p>}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
