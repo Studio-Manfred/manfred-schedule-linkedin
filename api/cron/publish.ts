@@ -1,27 +1,24 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { sendJson } from '../_lib/http.js'
 import { runPublishTick } from '../_lib/publish-tick.js'
-import { ZernioPublisher, type Publisher } from '../_lib/publisher.js'
+import { resolvePublisher as resolvePublisherWith } from '../_lib/resolve-publisher.js'
+import { ZernioPublisher } from '../_lib/publisher.js'
 import { getUserById, getZernioCreds } from '../_lib/users-repo.js'
 import { decrypt } from '../_lib/crypto.js'
 import * as posts from '../_lib/posts-repo.js'
 
-async function resolvePublisher(userId: string): Promise<Publisher | null> {
-  const creds = await getZernioCreds(userId)
-  if (creds) return new ZernioPublisher({ apiKey: decrypt(creds.apiKeyEnc), accountId: creds.accountId })
-
-  // Transition fallback: env creds, only for the configured fallback user (jens), only until they connect.
-  const envKey = process.env.ZERNIO_API_KEY
-  const envAcct = process.env.ZERNIO_ACCOUNT_ID
-  const fallbackEmail = process.env.ZERNIO_FALLBACK_EMAIL
-  if (envKey && envAcct && fallbackEmail) {
-    const user = await getUserById(userId)
-    if (user && user.email.toLowerCase() === fallbackEmail.toLowerCase()) {
-      return new ZernioPublisher({ apiKey: envKey, accountId: envAcct })
-    }
-  }
-  return null
-}
+const resolvePublisher = (userId: string) =>
+  resolvePublisherWith(userId, {
+    getZernioCreds,
+    getUserById,
+    decrypt,
+    makePublisher: (o) => new ZernioPublisher(o),
+    env: {
+      apiKey: process.env.ZERNIO_API_KEY,
+      accountId: process.env.ZERNIO_ACCOUNT_ID,
+      fallbackEmail: process.env.ZERNIO_FALLBACK_EMAIL,
+    },
+  })
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const secret = process.env.CRON_SECRET
