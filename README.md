@@ -105,6 +105,7 @@ see `docs/superpowers/specs/2026-07-20-linkedin-scheduler-design.md`, Prerequisi
 
 ## Operational notes
 
+- **Per-user data isolation:** Each signed-in user sees and edits only their own posts and scheduled slots (all read/write routes guard ownership via `user_id`); the cron's global claim for due posts remains shared across all users.
 - **Zernio holds the LinkedIn connection**, not us. If publishes start failing with auth
   errors, reconnect the LinkedIn account in the Zernio dashboard — nothing to fix in this
   app's code or env vars.

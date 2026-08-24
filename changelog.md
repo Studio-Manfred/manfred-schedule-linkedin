@@ -18,6 +18,10 @@
 
 ### Changed
 - Auth: replaced the shared password with Google sign-in; sessions now carry a user identity (foundation for per-user schedules). Signup gated to Google accounts on `ALLOWED_DOMAINS`. (STU-688)
+- Multi-tenant data isolation: `posts` and `schedule_slots` now carry a `user_id` owner
+  (migration `004`), and every queue/draft/history/slots read and write is scoped to the
+  signed-in user with `AND user_id = …` ownership guards. Publishing stays env-based for
+  now (only jens is active); per-user LinkedIn credentials land in PR3. (STU-689)
 
 ## 0.2.0 — 2026-07-20
 
