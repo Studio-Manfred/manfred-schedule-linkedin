@@ -63,14 +63,24 @@ describe('ComposerScreen', () => {
     )
   })
 
-  it('pre-fills the pin date from a ?pin= query param', async () => {
+  it('pre-fills the pin date from a ?pin= query param and pins at 09:00 that day', async () => {
+    vi.mocked(api.createPost).mockResolvedValue({ id: 'p1' } as never)
     render(
       <MemoryRouter initialEntries={['/compose?pin=2026-09-18']}>
         <ComposerScreen />
       </MemoryRouter>,
     )
-    const pin = await screen.findByLabelText(/pin to a specific date/i)
-    expect(pin).toHaveValue('2026-09-18T09:00')
+    await userEvent.type(await screen.findByLabelText(/post text/i), 'pinned post')
+    // date pre-filled from the query param, time defaults to 09:00 — submit proves both
+    await userEvent.click(screen.getByRole('button', { name: /^pin$/i }))
+    const input = vi.mocked(api.createPost).mock.calls[0]![0]
+    expect(input.action).toBe('pin')
+    const at = new Date(input.scheduledAt!)
+    expect(at.getFullYear()).toBe(2026)
+    expect(at.getMonth()).toBe(8) // September (0-indexed)
+    expect(at.getDate()).toBe(18)
+    expect(at.getHours()).toBe(9)
+    expect(at.getMinutes()).toBe(0)
   })
 
   it('disables Add to queue when no slots are configured', async () => {
