@@ -32,6 +32,9 @@
 - Cron publishing: now uses each user's own encrypted Zernio credentials to publish their
   posts; during rollout, jens publishes via an env fallback (`ZERNIO_FALLBACK_EMAIL` +
   env `ZERNIO_*`) until he connects his own account in Settings. (STU-690)
+- Composer: the "Pin to a specific date & time" field is now a design-system calendar
+  **date picker** plus a **30-minute time dropdown** (matching the publish cron cadence),
+  replacing the raw native `datetime-local` input. Same scheduling/timezone behavior. (STU-691)
 
 ## 0.2.0 — 2026-07-20
 

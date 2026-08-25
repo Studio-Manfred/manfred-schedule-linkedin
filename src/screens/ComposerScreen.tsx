@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button, Card } from '@studio-manfred/manfred-design-system'
+import {
+  Button,
+  Card,
+  DatePicker,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@studio-manfred/manfred-design-system'
 import { api, ApiError } from '@/api/client'
 import { dealSchedule } from '@/lib/queue'
+import { HALF_HOUR_TIMES, combinePinDateTime, snapToHalfHour } from '@/lib/pin'
 import {
   MAX_BODY_LENGTH,
   MAX_FIRST_COMMENT_LENGTH,
@@ -32,7 +42,8 @@ export function ComposerScreen() {
   const [images, setImages] = useState<PostImage[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [posts, setPosts] = useState<Post[]>([])
-  const [pinAt, setPinAt] = useState('')
+  const [pinDate, setPinDate] = useState<Date | undefined>(undefined)
+  const [pinTime, setPinTime] = useState('09:00')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -57,7 +68,8 @@ export function ComposerScreen() {
               hour12: false,
             }).formatToParts(new Date(post.scheduledAt))
             const at = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
-            setPinAt(`${at('year')}-${at('month')}-${at('day')}T${at('hour')}:${at('minute')}`)
+            setPinDate(new Date(Number(at('year')), Number(at('month')) - 1, Number(at('day'))))
+            setPinTime(snapToHalfHour(`${at('hour')}:${at('minute')}`))
           }
         }
       }
@@ -67,7 +79,10 @@ export function ComposerScreen() {
   // Pre-fill the pin datetime when arriving from the calendar's "add on this day".
   useEffect(() => {
     const pin = params.get('pin')
-    if (!editId && pin && /^\d{4}-\d{2}-\d{2}$/.test(pin)) setPinAt(`${pin}T09:00`)
+    if (!editId && pin && /^\d{4}-\d{2}-\d{2}$/.test(pin)) {
+      setPinDate(new Date(`${pin}T00:00`))
+      setPinTime('09:00')
+    }
   }, [params, editId])
 
   const nextSlot = useMemo(() => {
@@ -96,7 +111,7 @@ export function ComposerScreen() {
         images,
         firstComment,
         action,
-        ...(action === 'pin' ? { scheduledAt: new Date(pinAt).toISOString() } : {}),
+        ...(action === 'pin' && pinDate ? { scheduledAt: combinePinDateTime(pinDate, pinTime) } : {}),
       }
       if (editId) await api.updatePost(editId, input)
       else await api.createPost(input)
@@ -211,16 +226,32 @@ export function ComposerScreen() {
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="font-medium">Pin to a specific date &amp; time</span>
-            <input
-              type="datetime-local"
-              value={pinAt}
-              onChange={(e) => setPinAt(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
-            />
-          </label>
-          <Button type="button" disabled={busy || invalid || !pinAt} onClick={() => submit('pin')}>
+          <div className="flex flex-col gap-1">
+            <span id="pin-label" className="font-medium">
+              Pin to a specific date &amp; time
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <DatePicker
+                aria-labelledby="pin-label"
+                value={pinDate}
+                onValueChange={setPinDate}
+                placeholder="Pick a date"
+              />
+              <Select value={pinTime} onValueChange={setPinTime}>
+                <SelectTrigger aria-label="Pin time" className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {HALF_HOUR_TIMES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button type="button" disabled={busy || invalid || !pinDate} onClick={() => submit('pin')}>
             Pin
           </Button>
         </div>
