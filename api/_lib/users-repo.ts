@@ -39,3 +39,18 @@ export async function getUserById(id: string): Promise<User | null> {
   const rows = (await sql()`SELECT * FROM users WHERE id = ${id}`) as any[]
   return rows[0] ? rowToUser(rows[0]) : null
 }
+
+export async function setZernioConnection(userId: string, apiKeyEnc: string, accountId: string): Promise<void> {
+  await sql()`UPDATE users SET zernio_api_key_enc = ${apiKeyEnc}, zernio_account_id = ${accountId}, updated_at = now() WHERE id = ${userId}`
+}
+
+export async function clearZernioConnection(userId: string): Promise<void> {
+  await sql()`UPDATE users SET zernio_api_key_enc = NULL, zernio_account_id = NULL, updated_at = now() WHERE id = ${userId}`
+}
+
+export async function getZernioCreds(userId: string): Promise<{ apiKeyEnc: string; accountId: string } | null> {
+  const rows = (await sql()`SELECT zernio_api_key_enc, zernio_account_id FROM users WHERE id = ${userId}`) as any[]
+  const r = rows[0]
+  if (!r || !r.zernio_api_key_enc || !r.zernio_account_id) return null
+  return { apiKeyEnc: r.zernio_api_key_enc, accountId: r.zernio_account_id }
+}

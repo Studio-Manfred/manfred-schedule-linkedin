@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- Settings: **Connect LinkedIn** panel for per-user Zernio credential management. Users
+  create a free Zernio account, connect their LinkedIn profile, generate an API key in
+  Zernio's dashboard, and paste it into the app. Credentials are encrypted at rest
+  (AES-256-GCM, `CRED_ENC_KEY`), never logged, and only used server-side by the cron to
+  publish each user's own posts. (STU-690)
+
 ### Fixed
 - Publish cron cadence lowered from every 5 min (`*/5 * * * *`) to every 30 min
   (`*/30 * * * *`) in `vercel.json`. At 5-minute cadence every tick fired two Postgres
@@ -22,6 +29,9 @@
   (migration `004`), and every queue/draft/history/slots read and write is scoped to the
   signed-in user with `AND user_id = …` ownership guards. Publishing stays env-based for
   now (only jens is active); per-user LinkedIn credentials land in PR3. (STU-689)
+- Cron publishing: now uses each user's own encrypted Zernio credentials to publish their
+  posts; during rollout, jens publishes via an env fallback (`ZERNIO_FALLBACK_EMAIL` +
+  env `ZERNIO_*`) until he connects his own account in Settings. (STU-690)
 
 ## 0.2.0 — 2026-07-20
 

@@ -11,6 +11,8 @@ export interface NewPost {
   scheduledAt: Date | null
 }
 
+export type ClaimedPost = Post & { userId: string }
+
 export interface PostPatch {
   body: string
   images: PostImage[]
@@ -129,12 +131,18 @@ export async function nextPosition(userId: string): Promise<number> {
   return rows[0].next
 }
 
-export async function claimDuePosts(now: Date): Promise<Post[]> {
+export async function claimDuePosts(now: Date): Promise<ClaimedPost[]> {
   const rows = (await sql()`
     UPDATE posts SET status = 'publishing', attempts = attempts + 1, updated_at = now()
     WHERE status = 'queued' AND scheduled_at <= ${now}
     RETURNING *`) as any[]
-  return rows.map(rowToPost)
+  return rows.map((r) => ({ ...rowToPost(r), userId: r.user_id }))
+}
+
+/** Undo a claim for a user who can't publish yet: back to queued, attempt not counted, no error. */
+export async function releaseToQueued(id: string): Promise<void> {
+  await sql()`UPDATE posts SET status = 'queued', attempts = GREATEST(attempts - 1, 0), error = NULL, updated_at = now()
+    WHERE id = ${id} AND status = 'publishing'`
 }
 
 export async function requeue(id: string, error: string): Promise<void> {

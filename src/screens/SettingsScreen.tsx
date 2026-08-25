@@ -24,11 +24,54 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
   )
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [apiKey, setApiKey] = useState('')
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[] | null>(null)
+  const [chosen, setChosen] = useState<string>('')
+  const [connBusy, setConnBusy] = useState(false)
+  const [connError, setConnError] = useState<string | null>(null)
 
   useEffect(() => {
     api.getSlots().then((slots) => setRows(slots.map(({ weekday, timeLocal }) => ({ weekday, timeLocal }))))
     api.getConnection().then(setConnection)
   }, [])
+
+  async function refreshConnection() {
+    setConnection(await api.getConnection())
+  }
+  async function findAccounts() {
+    setConnError(null)
+    setConnBusy(true)
+    try {
+      const { accounts } = await api.connectStart(apiKey)
+      setAccounts(accounts)
+      setChosen(accounts[0]?.id ?? '')
+    } catch (e) {
+      setConnError(e instanceof Error ? e.message : 'could not reach Zernio')
+    } finally {
+      setConnBusy(false)
+    }
+  }
+  async function confirmConnect() {
+    setConnError(null)
+    setConnBusy(true)
+    try {
+      await api.connectConfirm(apiKey, chosen)
+      setApiKey('')
+      setAccounts(null)
+      setChosen('')
+      await refreshConnection()
+    } catch (e) {
+      setConnError(e instanceof Error ? e.message : 'connect failed')
+    } finally {
+      setConnBusy(false)
+    }
+  }
+  async function disconnect() {
+    setConnError(null); setConnBusy(true)
+    try { await api.disconnect(); await refreshConnection() }
+    catch (e) { setConnError(e instanceof Error ? e.message : 'disconnect failed') }
+    finally { setConnBusy(false) }
+  }
 
   function update(i: number, patch: Partial<SlotRow>) {
     setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)))
@@ -134,25 +177,69 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
         )}
       </Card>
 
-      <Card as="section" aria-labelledby="conn-h" className="flex flex-col gap-2">
-        <h2 id="conn-h" className="font-medium">
-          LinkedIn connection
-        </h2>
+      <Card as="section" aria-labelledby="conn-h" className="flex flex-col gap-3">
+        <h2 id="conn-h" className="font-medium">LinkedIn connection</h2>
         {connection === null ? (
           <p className="text-sm text-muted-foreground">Checking…</p>
         ) : connection.connected ? (
-          <p className="flex items-center gap-2">
-            <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-green-500" />
-            Connected via Zernio as <strong>{connection.accountName}</strong>
-          </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="flex items-center gap-2">
+                <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                Connected via Zernio as <strong>{connection.accountName}</strong>
+              </p>
+              <Button type="button" variant="outline" className="ml-auto" onClick={disconnect} disabled={connBusy}>
+                Disconnect
+              </Button>
+            </div>
+            {connError && <p role="alert" className="text-sm text-destructive">{connError}</p>}
+          </div>
         ) : (
-          <p className="text-sm text-destructive">
-            Not connected. Connect LinkedIn in the{' '}
-            <a href="https://zernio.com" target="_blank" rel="noreferrer" className="underline">
-              Zernio dashboard
-            </a>{' '}
-            and check the ZERNIO_API_KEY / ZERNIO_ACCOUNT_ID environment variables.
-          </p>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Bring your own LinkedIn: create a free{' '}
+              <a href="https://zernio.com" target="_blank" rel="noreferrer" className="underline">Zernio</a>{' '}
+              account, connect your LinkedIn there, then paste your Zernio API key
+              (Settings → API Keys) below.
+            </p>
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Zernio API key</span>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => { setApiKey(e.target.value); setAccounts(null) }}
+                className="rounded-md border border-input bg-background px-3 py-2"
+                autoComplete="off"
+              />
+            </label>
+            {accounts === null ? (
+              <div>
+                <Button type="button" variant="brand" onClick={findAccounts} disabled={!apiKey || connBusy}>
+                  Find my account
+                </Button>
+              </div>
+            ) : accounts.length === 0 ? (
+              <p role="alert" className="text-sm text-destructive">
+                No LinkedIn account is connected in that Zernio account yet.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-col gap-1 text-sm">
+                  <span id="linkedin-account-label">LinkedIn account</span>
+                  <Select value={chosen} onValueChange={setChosen}>
+                    <SelectTrigger aria-labelledby="linkedin-account-label" className="w-64"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="button" variant="brand" onClick={confirmConnect} disabled={!chosen || connBusy}>
+                  Connect
+                </Button>
+              </div>
+            )}
+            {connError && <p role="alert" className="text-sm text-destructive">{connError}</p>}
+          </div>
         )}
       </Card>
 
