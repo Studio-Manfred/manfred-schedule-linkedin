@@ -1,2 +1,4 @@
 @import 'tailwindcss';
+@import "@studio-manfred/manfred-design-system/tokens.css";
 @import '@studio-manfred/manfred-design-system/styles';
+@source "../node_modules/@studio-manfred/manfred-design-system/dist";

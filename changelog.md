@@ -24,6 +24,17 @@
   unrelated PRs. (STU-687)
 
 ### Changed
+- Design system 0.33.0 → 0.36.0 (STU-947). `src/index.css` now imports the
+  design-system `tokens.css` and has `@source` for its `dist`; `.mcp.json`
+  registers the design-system docs. Set up with `manfred-ds-cli doctor --fix`.
+  Classes that take effect for the first time:
+  - MonthCalendar: status dots for draft, queued and publishing posts
+    (`bg-muted-foreground`) were invisible and are now grey. Out-of-month cells
+    get a tint (`bg-muted/40`), and the drop target a highlight (`bg-primary/10`).
+  - PostCard: the draggable card's focus outline uses the DS ring colour
+    instead of the text colour.
+  - QueueScreen: the active tab underline uses `border-foreground` (it looked
+    the same before, because it fell back to the text colour).
 - Auth: replaced the shared password with Google sign-in; sessions now carry a user identity (foundation for per-user schedules). Signup gated to Google accounts on `ALLOWED_DOMAINS`. (STU-688)
 - Multi-tenant data isolation: `posts` and `schedule_slots` now carry a `user_id` owner
   (migration `004`), and every queue/draft/history/slots read and write is scoped to the
