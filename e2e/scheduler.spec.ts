@@ -114,9 +114,10 @@ test('keyboard-only reorder moves a card and calls the API', async ({ page }, te
 
 test('pin flow sends scheduledAt', async ({ page }) => {
   const state = await mockApi(page)
-  await page.goto('/compose')
+  // The composer accepts ?pin=YYYY-MM-DD to pre-fill the date picker (the same path the
+  // calendar's "add on this day" uses); the time dropdown defaults to 09:00 — then Pin.
+  await page.goto('/compose?pin=2030-01-15')
   await page.getByLabel(/post text/i).fill('Pinned post')
-  await page.getByLabel(/pin to a specific date/i).fill('2030-01-15T09:00')
   await page.getByRole('button', { name: /^pin$/i }).click()
   await expect(page).toHaveURL('/')
   expect(state.posts.some((p) => p.pinned)).toBe(true)
