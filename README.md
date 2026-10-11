@@ -5,7 +5,7 @@ posts, drops them into a recurring queue (e.g. Tue/Thu 08:30 Europe/Stockholm) o
 them to an exact time, and the app auto-publishes to his LinkedIn profile with no laptop
 open. Posts are written elsewhere (Claude skills) — this app only schedules and publishes.
 
-> **Status:** **live in production** at https://manfred-schedule-linkedin.vercel.app —
+> **Status:** **live in production** at https://linkedin.studiomanfred.com —
 > backend, 5 frontend screens, Monthly View calendar, first-comment, E2E + accessibility.
 > See `changelog.md` for the release history.
 
@@ -78,7 +78,7 @@ Copy `.env.example` to `.env.local` (or `vercel env pull .env.local` once provis
 | --- | --- |
 | `GOOGLE_CLIENT_ID` | OAuth client ID from Google Cloud Console. |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret (private, server-side only). |
-| `APP_URL` | Public base URL (e.g., `https://manfred-schedule-linkedin.vercel.app`), used to build the OAuth redirect URI. |
+| `APP_URL` | Public base URL (e.g., `https://linkedin.studiomanfred.com`), used to build the OAuth redirect URI. |
 | `ALLOWED_DOMAINS` | Comma-separated email domains for signup allowlist (e.g., `studiomanfred.com`). |
 | `ALLOWED_EMAILS` | Optional: comma-separated exact emails to restrict signup during rollout; leave blank to use domains only. |
 | `SESSION_SECRET` | 32+ random bytes used to sign the httpOnly session cookie. |

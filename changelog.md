@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- 2026-10-11 — Production address is now https://linkedin.studiomanfred.com (old vercel.app address still works).
+
 ### Added
 - Settings: **Connect LinkedIn** panel for per-user Zernio credential management. Users
   create a free Zernio account, connect their LinkedIn profile, generate an API key in
